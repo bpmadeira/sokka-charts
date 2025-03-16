@@ -2,44 +2,31 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Game Stats & Revenue Distribution</title>
-  <!-- Load Chart.js from a CDN -->
+  <title>Flashscore-Style Match Stats</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       margin: 0;
       padding: 20px;
-      background-color: #fff; /* Adjust background if needed */
       font-family: Arial, sans-serif;
     }
     .chart-container {
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
-      margin-bottom: 40px;
-    }
-    canvas {
-      display: block;
-      width: 100% !important;
-      height: auto !important;
     }
   </style>
 </head>
 <body>
-  <!-- Container for the match statistics chart -->
   <div class="chart-container">
-    <canvas id="statsChart"></canvas>
-  </div>
-  <!-- Container for the revenue distribution chart -->
-  <div class="chart-container">
-    <canvas id="revenueChart"></canvas>
+    <canvas id="matchStatsChart"></canvas>
   </div>
 
   <script>
-    // 1) Get URL parameters (e.g., ?home_shots=12&away_shots=10...)
+    // 1) Grab query parameters
     const params = new URLSearchParams(window.location.search);
 
-    // 2) Parse each parameter as a number, defaulting to 0 if missing
+    // 2) Parse them as numbers (default to 0 if missing)
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -58,14 +45,15 @@
     const awayYellows       = Number(params.get("away_yellows")       || 0);
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
-    const homeTotalActions  = Number(params.get("home_total_actions") || 0);
-    const awayTotalActions  = Number(params.get("away_total_actions") || 0);
 
-    // 3) For revenue distribution
-    const totalRevenue      = Number(params.get("RevenueCalculated")   || 0);
+    // 3) Add Possession (Home & Away) from the query
+    //    e.g. PossessionHome=44, PossessionAway=56
+    const possessionHome    = Number(params.get("PossessionHome")     || 0);
+    const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
-    // ----- Build Data Arrays for the Stats Chart -----
+    // 4) Build your stat labels (one per row)
     const statLabels = [
+      "Ball Possession",
       "Shots",
       "Shots on Goal",
       "Goal Chances",
@@ -74,11 +62,13 @@
       "Corners",
       "Fouls",
       "Yellows",
-      "Reds",
-      "Total Actions"
+      "Reds"
     ];
 
+    // 5) Build the data arrays in the same order as `statLabels`
+    //    For possession, you might be using percentages (e.g. 44 vs. 56).
     const homeData = [
+      possessionHome,
       homeShots,
       homeShotsOnGoal,
       homeGoalChances,
@@ -87,11 +77,11 @@
       homeCorners,
       homeFouls,
       homeYellows,
-      homeReds,
-      homeTotalActions
+      homeReds
     ];
 
     const awayData = [
+      possessionAway,
       awayShots,
       awayShotsOnGoal,
       awayGoalChances,
@@ -100,13 +90,12 @@
       awayCorners,
       awayFouls,
       awayYellows,
-      awayReds,
-      awayTotalActions
+      awayReds
     ];
 
-    // ----- Create the Horizontal Stacked Bar Chart for Match Stats -----
-    const ctxStats = document.getElementById("statsChart").getContext("2d");
-    new Chart(ctxStats, {
+    // 6) Create the stacked horizontal bar chart
+    const ctx = document.getElementById("matchStatsChart").getContext("2d");
+    new Chart(ctx, {
       type: "bar",
       data: {
         labels: statLabels,
@@ -114,23 +103,27 @@
           {
             label: "Home",
             data: homeData,
-            backgroundColor: "rgba(231, 76, 60, 0.7)" // Red-ish
+            backgroundColor: "#e74c3c"  // Red-ish
           },
           {
             label: "Away",
             data: awayData,
-            backgroundColor: "rgba(52, 152, 219, 0.7)" // Blue-ish
+            backgroundColor: "#2c3e50"  // Dark color (navy/black)
           }
         ]
       },
       options: {
-        indexAxis: "y",  // Horizontal bars
+        indexAxis: "y",           // Horizontal bars
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
             stacked: true,
-            beginAtZero: true
+            beginAtZero: true,
+            // If possession is in percentages (0-100),
+            // you might set max: 100 so the bar
+            // doesn't stretch beyond 100.
+            // max: 100,
           },
           y: {
             stacked: true
@@ -138,38 +131,11 @@
         },
         plugins: {
           legend: {
+            display: true,
             position: "top"
           },
           tooltip: {
             enabled: true
-          }
-        }
-      }
-    });
-
-    // ----- Create the Revenue Distribution Pie Chart -----
-    // Calculate the distribution: 95% and 5%
-    const revenue95 = totalRevenue * 0.95;
-    const revenue5  = totalRevenue * 0.05;
-
-    const ctxRevenue = document.getElementById("revenueChart").getContext("2d");
-    new Chart(ctxRevenue, {
-      type: "pie",
-      data: {
-        labels: ["Club Revenue (95%)", "Other (5%)"],
-        datasets: [{
-          data: [revenue95, revenue5],
-          backgroundColor: [
-            "rgba(46, 204, 113, 0.8)",  // Green-ish
-            "rgba(155, 89, 182, 0.8)"   // Purple-ish
-          ]
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: "bottom"
           }
         }
       }
