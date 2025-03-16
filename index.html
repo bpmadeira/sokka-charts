@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Flashscore-Style Match Stats</title>
+  <title>Absolute Value Match Stats</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -14,10 +14,9 @@
     .chart-container {
       width: 100%;
       max-width: 900px;
-      margin: auto;
+      margin: 0 auto;
     }
-    /* Optional: control overall chart height so we have enough space
-       for each row. Adjust as needed. */
+    /* Control the overall height so we can see all bars comfortably */
     canvas {
       display: block;
       height: 600px; 
@@ -55,14 +54,14 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // Possession typically in percentages (e.g., 44 vs. 56)
+    // Possession can be an absolute number here if you like,
+    // or keep it separate if it’s truly a percentage.
     const possessionHome    = Number(params.get("PossessionHome")     || 0);
     const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
     /*************************************************************
      * 2) BUILD LABELS & ARRAYS
      *************************************************************/
-    // The order here matches the order of the data arrays
     const statLabels = [
       "Ball Possession",
       "Shots",
@@ -76,8 +75,7 @@
       "Reds"
     ];
 
-    // Home & Away arrays in that same order
-    const rawHomeData = [
+    const homeValues = [
       possessionHome,
       homeShots,
       homeShotsOnGoal,
@@ -90,7 +88,7 @@
       homeReds
     ];
 
-    const rawAwayData = [
+    const awayValues = [
       possessionAway,
       awayShots,
       awayShotsOnGoal,
@@ -104,73 +102,8 @@
     ];
 
     /*************************************************************
-     * 3) OPTIONAL: SCALE EACH ROW TO 100%
-     *    If you want each row to be a "split bar" that sums to 100,
-     *    we can do that here. If you prefer raw counts, skip this step.
-     *************************************************************/
-    function toPercentageArray(homeArr, awayArr) {
-      return homeArr.map((homeVal, i) => {
-        const awayVal = awayArr[i];
-        const sum = homeVal + awayVal;
-        if (sum > 0) {
-          const homePct = (homeVal / sum) * 100;
-          const awayPct = (awayVal / sum) * 100;
-          return { home: homePct, away: awayPct };
-        } else {
-          return { home: 0, away: 0 };
-        }
-      });
-    }
-
-    // If you want purely *percentage-based* bars, do:
-    const scaledStats = toPercentageArray(rawHomeData, rawAwayData);
-
-    // Then separate them back into arrays for Chart.js
-    const homeData = scaledStats.map(s => s.home);
-    const awayData = scaledStats.map(s => s.away);
-
-    // If you want to show *raw data*, skip the scaling step and use:
-    //   const homeData = rawHomeData;
-    //   const awayData = rawAwayData;
-    // ...and remove or adjust the axis max below.
-
-    /*************************************************************
-     * 4) CUSTOM PLUGIN: LIGHT GRAY BACKGROUND BAR
-     *    Draw a track from 0 to 100 behind each row.
-     *************************************************************/
-    const backgroundBarPlugin = {
-      id: 'backgroundBar',
-      beforeDatasetsDraw(chart) {
-        const {
-          ctx,
-          chartArea: { top, bottom },
-          scales: { x, y },
-        } = chart;
-
-        chart.data.labels.forEach((_, i) => {
-          const yCenter = y.getPixelForValue(i);
-          // Calculate bar height from center
-          const barHeight = y.getPixelForValue(i - 0.5) - y.getPixelForValue(i + 0.5);
-          const halfBar = Math.abs(barHeight / 2);
-
-          // X-coords for 0% and 100%
-          const x0 = x.getPixelForValue(0);
-          const x100 = x.getPixelForValue(100);
-
-          // Draw a light gray rectangle behind the bar
-          ctx.save();
-          ctx.fillStyle = '#e0e0e0';
-          // Shrink the bar a bit vertically (0.6 factor)
-          const rectTop = yCenter - halfBar * 0.6;
-          const rectHeight = Math.abs(barHeight * 0.6);
-          ctx.fillRect(x0, rectTop, x100 - x0, rectHeight);
-          ctx.restore();
-        });
-      },
-    };
-
-    /*************************************************************
-     * 5) CREATE THE CHART
+     * 3) CREATE THE SIDE-BY-SIDE BAR CHART (NOT STACKED)
+     *    Each stat label is on the Y-axis; no axes are shown.
      *************************************************************/
     const ctx = document.getElementById("matchStatsChart").getContext("2d");
     new Chart(ctx, {
@@ -180,35 +113,37 @@
         datasets: [
           {
             label: "Home",
-            data: homeData,
-            backgroundColor: "#fa3048", // Flashscore pinkish-red
-            borderRadius: 6,
+            data: homeValues,
+            backgroundColor: "#fa3048", // Red/pink
+            borderRadius: 6
           },
           {
             label: "Away",
-            data: awayData,
-            backgroundColor: "#2c2c2c", // Flashscore dark
-            borderRadius: 6,
+            data: awayValues,
+            backgroundColor: "#2c2c2c", // Dark
+            borderRadius: 6
           }
         ]
       },
       options: {
-        indexAxis: "y",
+        indexAxis: "y",   // Horizontal bars
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
-            stacked: true,
-            min: 0,
-            max: 100, // Only relevant if scaling to 100
+            // Hide the X axis line & ticks
             grid: { display: false },
-            ticks: {
-              callback: val => val + "%"
-            }
+            ticks: { display: false },
+            beginAtZero: true
           },
           y: {
-            stacked: true,
-            grid: { display: false }
+            // Show the category labels (Shots, Fouls, etc.)
+            // but hide grid lines and axis line
+            grid: { display: false },
+            border: { display: false },
+            ticks: {
+              color: "#000" // black text for labels
+            }
           }
         },
         plugins: {
@@ -220,16 +155,15 @@
             enabled: true,
             callbacks: {
               label: function(context) {
-                // Show "Home: 45%" etc.
+                // e.g., "Home: 12"
                 const label = context.dataset.label || "";
                 const val = context.parsed.x || 0;
-                return label + ": " + val.toFixed(0) + "%";
+                return `${label}: ${val}`;
               }
             }
           }
         }
-      },
-      plugins: [backgroundBarPlugin]
+      }
     });
   </script>
 </body>
