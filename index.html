@@ -2,39 +2,56 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Absolute Value Match Stats</title>
+  <title>Match Stats & Momentum</title>
+  <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Optional: Load the Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     body {
       margin: 0;
       padding: 20px;
-      font-family: Arial, sans-serif;
       background: #f8f8f8;
+      font-family: 'Inter', sans-serif;
     }
     .chart-container {
       width: 100%;
       max-width: 900px;
-      margin: 0 auto;
+      margin: 20px auto;
     }
-    /* Control the overall height so we can see all bars comfortably */
-    canvas {
+    /* Bar chart big enough to show all rows comfortably */
+    #statsChart {
       display: block;
-      height: 600px; 
+      height: 450px; 
+      margin-bottom: 40px;
+    }
+    /* Momentum chart */
+    #momentumChart {
+      display: block;
+      height: 300px;
     }
   </style>
 </head>
 <body>
+  <!-- Bar Chart for Match Stats (Absolute Values) -->
   <div class="chart-container">
-    <canvas id="matchStatsChart"></canvas>
+    <canvas id="statsChart"></canvas>
+  </div>
+  <!-- Momentum Chart -->
+  <div class="chart-container">
+    <canvas id="momentumChart"></canvas>
   </div>
 
   <script>
     /*************************************************************
-     * 1) GET DATA FROM URL PARAMS
+     * A) PARSE URL PARAMS (NO PLACEHOLDERS)
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // Parse each param as a number (or 0 if missing)
+    // --- 1) Absolute stats for the bar chart ---
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -54,14 +71,23 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // Possession can be an absolute number here if you like,
-    // or keep it separate if it’s truly a percentage.
+    // If possession is also absolute (e.g. 40 vs 60)
     const possessionHome    = Number(params.get("PossessionHome")     || 0);
     const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
+    // --- 2) Momentum chart arrays (CSV format, e.g. "0,15,30,45,60" & "0.5,0.55,0.6,0.55,0.4") ---
+    const rawTimeTracker    = params.get("time_tracker")       || "0,15,30,45,60,75,90";
+    const rawMomentum       = params.get("momentum_tracker")    || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+
+    const timeData = rawTimeTracker.split(",").map(val => Number(val.trim()));
+    const homeMomentumData = rawMomentum.split(",").map(val => Number(val.trim()));
+    // away = 1 - home
+    const awayMomentumData = homeMomentumData.map(v => 1 - v);
+
     /*************************************************************
-     * 2) BUILD LABELS & ARRAYS
+     * B) BUILD ARRAYS FOR BAR CHART
      *************************************************************/
+    // Label them in vertical order
     const statLabels = [
       "Ball Possession",
       "Shots",
@@ -75,6 +101,7 @@
       "Reds"
     ];
 
+    // Home & Away arrays in that same order
     const homeValues = [
       possessionHome,
       homeShots,
@@ -102,11 +129,10 @@
     ];
 
     /*************************************************************
-     * 3) CREATE THE SIDE-BY-SIDE BAR CHART (NOT STACKED)
-     *    Each stat label is on the Y-axis; no axes are shown.
+     * C) RENDER THE BAR CHART (SIDE-BY-SIDE, NO AXES)
      *************************************************************/
-    const ctx = document.getElementById("matchStatsChart").getContext("2d");
-    new Chart(ctx, {
+    const ctxBar = document.getElementById("statsChart").getContext("2d");
+    new Chart(ctxBar, {
       type: "bar",
       data: {
         labels: statLabels,
@@ -114,54 +140,165 @@
           {
             label: "Home",
             data: homeValues,
-            backgroundColor: "#fa3048", // Red/pink
+            backgroundColor: "#fa3048",
             borderRadius: 6
           },
           {
             label: "Away",
             data: awayValues,
-            backgroundColor: "#2c2c2c", // Dark
+            backgroundColor: "#2c2c2c",
             borderRadius: 6
           }
         ]
       },
       options: {
-        indexAxis: "y",   // Horizontal bars
+        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
-            // Hide the X axis line & ticks
             grid: { display: false },
-            ticks: { display: false },
+            ticks: { display: false },    // hide x-axis ticks
             beginAtZero: true
           },
           y: {
-            // Show the category labels (Shots, Fouls, etc.)
-            // but hide grid lines and axis line
             grid: { display: false },
             border: { display: false },
             ticks: {
-              color: "#000" // black text for labels
+              color: "#000",              // black text
+              font: {
+                family: "Inter",
+                weight: "700"            // bold
+              }
             }
           }
         },
         plugins: {
           legend: {
             display: true,
-            position: "top"
+            position: "top",
+            labels: {
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            }
           },
           tooltip: {
             enabled: true,
+            titleFont: {
+              family: "Inter",
+              weight: "700"
+            },
+            bodyFont: {
+              family: "Inter"
+            },
             callbacks: {
               label: function(context) {
-                // e.g., "Home: 12"
+                // e.g. "Home: 12"
                 const label = context.dataset.label || "";
                 const val = context.parsed.x || 0;
                 return `${label}: ${val}`;
               }
             }
           }
+        }
+      }
+    });
+
+    /*************************************************************
+     * D) RENDER THE MOMENTUM LINE CHART
+     *************************************************************/
+    const ctxLine = document.getElementById("momentumChart").getContext("2d");
+    new Chart(ctxLine, {
+      type: "line",
+      data: {
+        labels: timeData,
+        datasets: [
+          {
+            label: "Home Momentum",
+            data: homeMomentumData,
+            borderColor: "#e74c3c",
+            borderWidth: 2,
+            radius: 0,
+            fill: false
+          },
+          {
+            label: "Away Momentum",
+            data: awayMomentumData,
+            borderColor: "#3498db",
+            borderWidth: 2,
+            radius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Time (minutes)",
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            },
+            ticks: {
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            },
+            grid: { display: true }
+          },
+          y: {
+            min: 0,
+            max: 1,
+            title: {
+              display: true,
+              text: "Momentum",
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            },
+            ticks: {
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            },
+            grid: { display: true }
+          }
+        },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            }
+          },
+          tooltip: {
+            mode: "index",
+            intersect: false,
+            titleFont: {
+              family: "Inter",
+              weight: "700"
+            },
+            bodyFont: {
+              family: "Inter"
+            }
+          }
+        },
+        interaction: {
+          mode: "index",
+          intersect: false
         }
       }
     });
