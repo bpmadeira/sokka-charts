@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Match Stats & Momentum</title>
+  <title>Match Stats & Momentum (Responsive, Bigger Momentum Chart)</title>
   <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Optional: Load the Inter font -->
+  <!-- Load the Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
@@ -17,31 +17,47 @@
       background: #f8f8f8;
       font-family: 'Inter', sans-serif;
     }
+
+    /*
+      We'll give each chart container a stable aspect ratio,
+      and slightly increase the total width from 90vw to 98vw
+      plus a bigger max-width (990px instead of 900px).
+    */
     .chart-container {
-      width: 100%;
-      max-width: 900px;
+      width: 98vw;        /* up from 90vw - ~10% bigger */
+      max-width: 990px;   /* up from 900px - ~10% bigger */
       margin: 20px auto;
+      position: relative;
     }
-    /* Bar chart big enough to show all rows comfortably */
-    #statsChart {
-      display: block;
-      height: 450px; 
-      margin-bottom: 40px;
+
+    /* Bar chart container: aspect ratio 16:9 */
+    #barChartContainer {
+      aspect-ratio: 16 / 9;
     }
-    /* Momentum chart */
-    #momentumChart {
+    /* Momentum chart container: also 16:9 (or 3:2 if you want more vertical space) */
+    #lineChartContainer {
+      aspect-ratio: 16 / 9;
+    }
+
+    /*
+      Let the canvas fill the container; Chart.js will scale
+      the content responsively within that ratio.
+    */
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
       display: block;
-      height: 300px;
     }
   </style>
 </head>
 <body>
-  <!-- Bar Chart for Match Stats (Absolute Values) -->
-  <div class="chart-container">
+  <!-- Bar Chart (side-by-side stats) -->
+  <div class="chart-container" id="barChartContainer">
     <canvas id="statsChart"></canvas>
   </div>
-  <!-- Momentum Chart -->
-  <div class="chart-container">
+
+  <!-- Momentum Chart (thicker lines, bigger container) -->
+  <div class="chart-container" id="lineChartContainer">
     <canvas id="momentumChart"></canvas>
   </div>
 
@@ -72,12 +88,12 @@
     const awayReds          = Number(params.get("away_reds")          || 0);
 
     // If possession is also absolute (e.g. 40 vs 60)
-    const possessionHome    = Number(params.get("PossessionHome")     || 0);
-    const possessionAway    = Number(params.get("PossessionAway")     || 0);
+    const possessionHome    = Number(params.get("possessionHome")     || 0);
+    const possessionAway    = Number(params.get("possessionAway")     || 0);
 
-    // --- 2) Momentum chart arrays (CSV format, e.g. "0,15,30,45,60" & "0.5,0.55,0.6,0.55,0.4") ---
+    // --- 2) Momentum chart arrays (CSV format) ---
     const rawTimeTracker    = params.get("time_tracker")       || "0,15,30,45,60,75,90";
-    const rawMomentum       = params.get("momentum_tracker")    || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const rawMomentum       = params.get("momentum_tracker")   || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
 
     const timeData = rawTimeTracker.split(",").map(val => Number(val.trim()));
     const homeMomentumData = rawMomentum.split(",").map(val => Number(val.trim()));
@@ -152,25 +168,23 @@
         ]
       },
       options: {
-        // Disable responsiveness
-        responsive: false,
-        maintainAspectRatio: false,
-
+        responsive: true,
+        maintainAspectRatio: true,
         indexAxis: "y",
         scales: {
           x: {
             grid: { display: false },
-            ticks: { display: false },    // hide x-axis ticks
+            ticks: { display: false }, // hide x-axis ticks
             beginAtZero: true
           },
           y: {
             grid: { display: false },
             border: { display: false },
             ticks: {
-              color: "#000",              // black text
+              color: "#000",
               font: {
                 family: "Inter",
-                weight: "700"            // bold
+                weight: "700"
               }
             }
           }
@@ -197,7 +211,6 @@
             },
             callbacks: {
               label: function(context) {
-                // e.g. "Home: 12"
                 const label = context.dataset.label || "";
                 const val = context.parsed.x || 0;
                 return `${label}: ${val}`;
@@ -209,7 +222,7 @@
     });
 
     /*************************************************************
-     * D) RENDER THE MOMENTUM LINE CHART
+     * D) RENDER THE MOMENTUM LINE CHART (THICKER LINES)
      *************************************************************/
     const ctxLine = document.getElementById("momentumChart").getContext("2d");
     new Chart(ctxLine, {
@@ -221,7 +234,7 @@
             label: "Home Momentum",
             data: homeMomentumData,
             borderColor: "#e74c3c",
-            borderWidth: 2,
+            borderWidth: 3, // thicker line
             radius: 0,
             fill: false
           },
@@ -229,17 +242,15 @@
             label: "Away Momentum",
             data: awayMomentumData,
             borderColor: "#3498db",
-            borderWidth: 2,
+            borderWidth: 3, // thicker line
             radius: 0,
             fill: false
           }
         ]
       },
       options: {
-        // Disable responsiveness
-        responsive: false,
-        maintainAspectRatio: false,
-
+        responsive: true,
+        maintainAspectRatio: true,
         scales: {
           x: {
             title: {
