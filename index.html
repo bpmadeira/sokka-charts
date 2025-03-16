@@ -36,31 +36,33 @@
   </div>
 
   <script>
-    // ----- Injected Data from Glide -----
-    // Replace the placeholders below with your exact column names from Glide.
-    const homeShots           = Number("[home_shots]");
-    const awayShots           = Number("[away_shots]");
-    const homeShotsOnGoal     = Number("[home_shots_on_goal]");
-    const awayShotsOnGoal     = Number("[away_shots_on_goal]");
-    const homeGoalChances     = Number("[home_goal_chances]");
-    const awayGoalChances     = Number("[away_goal_chances]");
-    const homeDuelsWon        = Number("[home_duels_won]");
-    const awayDuelsWon        = Number("[away_duels_won]");
-    const homeSaves           = Number("[home_saves]");
-    const awaySaves           = Number("[away_saves]");
-    const homeCorners         = Number("[home_corners]");
-    const awayCorners         = Number("[away_corners]");
-    const homeFouls           = Number("[home_fouls]");
-    const awayFouls           = Number("[away_fouls]");
-    const homeYellows         = Number("[home_yellows]");
-    const awayYellows         = Number("[away_yellows]");
-    const homeReds            = Number("[home_reds]");
-    const awayReds            = Number("[away_reds]");
-    const homeTotalActions    = Number("[home_total_actions]");
-    const awayTotalActions    = Number("[away_total_actions]");
-    
-    // For revenue distribution: total revenue from the game.
-    const totalRevenue        = Number("[RevenueCalculated]");
+    // 1) Get URL parameters (e.g., ?home_shots=12&away_shots=10...)
+    const params = new URLSearchParams(window.location.search);
+
+    // 2) Parse each parameter as a number, defaulting to 0 if missing
+    const homeShots         = Number(params.get("home_shots")         || 0);
+    const awayShots         = Number(params.get("away_shots")         || 0);
+    const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
+    const awayShotsOnGoal   = Number(params.get("away_shots_on_goal") || 0);
+    const homeGoalChances   = Number(params.get("home_goal_chances")  || 0);
+    const awayGoalChances   = Number(params.get("away_goal_chances")  || 0);
+    const homeDuelsWon      = Number(params.get("home_duels_won")     || 0);
+    const awayDuelsWon      = Number(params.get("away_duels_won")     || 0);
+    const homeSaves         = Number(params.get("home_saves")         || 0);
+    const awaySaves         = Number(params.get("away_saves")         || 0);
+    const homeCorners       = Number(params.get("home_corners")       || 0);
+    const awayCorners       = Number(params.get("away_corners")       || 0);
+    const homeFouls         = Number(params.get("home_fouls")         || 0);
+    const awayFouls         = Number(params.get("away_fouls")         || 0);
+    const homeYellows       = Number(params.get("home_yellows")       || 0);
+    const awayYellows       = Number(params.get("away_yellows")       || 0);
+    const homeReds          = Number(params.get("home_reds")          || 0);
+    const awayReds          = Number(params.get("away_reds")          || 0);
+    const homeTotalActions  = Number(params.get("home_total_actions") || 0);
+    const awayTotalActions  = Number(params.get("away_total_actions") || 0);
+
+    // 3) For revenue distribution
+    const totalRevenue      = Number(params.get("RevenueCalculated")   || 0);
 
     // ----- Build Data Arrays for the Stats Chart -----
     const statLabels = [
@@ -159,7 +161,7 @@
           data: [revenue95, revenue5],
           backgroundColor: [
             "rgba(46, 204, 113, 0.8)",  // Green-ish
-            "rgba(155, 89, 182, 0.8)"    // Purple-ish
+            "rgba(155, 89, 182, 0.8)"   // Purple-ish
           ]
         }]
       },
