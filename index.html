@@ -9,11 +9,18 @@
       margin: 0;
       padding: 20px;
       font-family: Arial, sans-serif;
+      background: #f8f8f8;
     }
     .chart-container {
       width: 100%;
       max-width: 900px;
       margin: auto;
+    }
+    /* Optional: control overall chart height so we have enough space
+       for each row. Adjust as needed. */
+    canvas {
+      display: block;
+      height: 600px; 
     }
   </style>
 </head>
@@ -23,10 +30,12 @@
   </div>
 
   <script>
-    // 1) Grab query parameters
+    /*************************************************************
+     * 1) GET DATA FROM URL PARAMS
+     *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // 2) Parse them as numbers (default to 0 if missing)
+    // Parse each param as a number (or 0 if missing)
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -46,12 +55,14 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // 3) Add Possession (Home & Away) from the query
-    //    e.g. PossessionHome=44, PossessionAway=56
+    // Possession typically in percentages (e.g., 44 vs. 56)
     const possessionHome    = Number(params.get("PossessionHome")     || 0);
     const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
-    // 4) Build your stat labels (one per row)
+    /*************************************************************
+     * 2) BUILD LABELS & ARRAYS
+     *************************************************************/
+    // The order here matches the order of the data arrays
     const statLabels = [
       "Ball Possession",
       "Shots",
@@ -65,9 +76,8 @@
       "Reds"
     ];
 
-    // 5) Build the data arrays in the same order as `statLabels`
-    //    For possession, you might be using percentages (e.g. 44 vs. 56).
-    const homeData = [
+    // Home & Away arrays in that same order
+    const rawHomeData = [
       possessionHome,
       homeShots,
       homeShotsOnGoal,
@@ -80,7 +90,7 @@
       homeReds
     ];
 
-    const awayData = [
+    const rawAwayData = [
       possessionAway,
       awayShots,
       awayShotsOnGoal,
@@ -93,7 +103,75 @@
       awayReds
     ];
 
-    // 6) Create the stacked horizontal bar chart
+    /*************************************************************
+     * 3) OPTIONAL: SCALE EACH ROW TO 100%
+     *    If you want each row to be a "split bar" that sums to 100,
+     *    we can do that here. If you prefer raw counts, skip this step.
+     *************************************************************/
+    function toPercentageArray(homeArr, awayArr) {
+      return homeArr.map((homeVal, i) => {
+        const awayVal = awayArr[i];
+        const sum = homeVal + awayVal;
+        if (sum > 0) {
+          const homePct = (homeVal / sum) * 100;
+          const awayPct = (awayVal / sum) * 100;
+          return { home: homePct, away: awayPct };
+        } else {
+          return { home: 0, away: 0 };
+        }
+      });
+    }
+
+    // If you want purely *percentage-based* bars, do:
+    const scaledStats = toPercentageArray(rawHomeData, rawAwayData);
+
+    // Then separate them back into arrays for Chart.js
+    const homeData = scaledStats.map(s => s.home);
+    const awayData = scaledStats.map(s => s.away);
+
+    // If you want to show *raw data*, skip the scaling step and use:
+    //   const homeData = rawHomeData;
+    //   const awayData = rawAwayData;
+    // ...and remove or adjust the axis max below.
+
+    /*************************************************************
+     * 4) CUSTOM PLUGIN: LIGHT GRAY BACKGROUND BAR
+     *    Draw a track from 0 to 100 behind each row.
+     *************************************************************/
+    const backgroundBarPlugin = {
+      id: 'backgroundBar',
+      beforeDatasetsDraw(chart) {
+        const {
+          ctx,
+          chartArea: { top, bottom },
+          scales: { x, y },
+        } = chart;
+
+        chart.data.labels.forEach((_, i) => {
+          const yCenter = y.getPixelForValue(i);
+          // Calculate bar height from center
+          const barHeight = y.getPixelForValue(i - 0.5) - y.getPixelForValue(i + 0.5);
+          const halfBar = Math.abs(barHeight / 2);
+
+          // X-coords for 0% and 100%
+          const x0 = x.getPixelForValue(0);
+          const x100 = x.getPixelForValue(100);
+
+          // Draw a light gray rectangle behind the bar
+          ctx.save();
+          ctx.fillStyle = '#e0e0e0';
+          // Shrink the bar a bit vertically (0.6 factor)
+          const rectTop = yCenter - halfBar * 0.6;
+          const rectHeight = Math.abs(barHeight * 0.6);
+          ctx.fillRect(x0, rectTop, x100 - x0, rectHeight);
+          ctx.restore();
+        });
+      },
+    };
+
+    /*************************************************************
+     * 5) CREATE THE CHART
+     *************************************************************/
     const ctx = document.getElementById("matchStatsChart").getContext("2d");
     new Chart(ctx, {
       type: "bar",
@@ -103,30 +181,34 @@
           {
             label: "Home",
             data: homeData,
-            backgroundColor: "#e74c3c"  // Red-ish
+            backgroundColor: "#fa3048", // Flashscore pinkish-red
+            borderRadius: 6,
           },
           {
             label: "Away",
             data: awayData,
-            backgroundColor: "#2c3e50"  // Dark color (navy/black)
+            backgroundColor: "#2c2c2c", // Flashscore dark
+            borderRadius: 6,
           }
         ]
       },
       options: {
-        indexAxis: "y",           // Horizontal bars
+        indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
             stacked: true,
-            beginAtZero: true,
-            // If possession is in percentages (0-100),
-            // you might set max: 100 so the bar
-            // doesn't stretch beyond 100.
-            // max: 100,
+            min: 0,
+            max: 100, // Only relevant if scaling to 100
+            grid: { display: false },
+            ticks: {
+              callback: val => val + "%"
+            }
           },
           y: {
-            stacked: true
+            stacked: true,
+            grid: { display: false }
           }
         },
         plugins: {
@@ -135,10 +217,19 @@
             position: "top"
           },
           tooltip: {
-            enabled: true
+            enabled: true,
+            callbacks: {
+              label: function(context) {
+                // Show "Home: 45%" etc.
+                const label = context.dataset.label || "";
+                const val = context.parsed.x || 0;
+                return label + ": " + val.toFixed(0) + "%";
+              }
+            }
           }
         }
-      }
+      },
+      plugins: [backgroundBarPlugin]
     });
   </script>
 </body>
