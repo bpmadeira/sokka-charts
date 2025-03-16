@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Match Stats & Momentum (Manual Resize)</title>
+  <title>Match Stats & Momentum (Baseline Responsive)</title>
   <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load the Inter font -->
+  <!-- Load Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
@@ -17,48 +17,40 @@
       background: #f8f8f8;
       font-family: 'Inter', sans-serif;
     }
-
-    /* 
-      We'll use containers that define width in percentages or max-width,
-      but rely on manual resizing logic in JavaScript to set canvas dimensions.
-    */
+    /* A simple container that limits width but remains centered */
     .chart-container {
-      width: 90vw;        /* For example, 90% viewport width */
-      max-width: 900px;   /* Up to 900px on large screens */
-      margin: 20px auto;  
-      position: relative; /* So we can measure container size easily */
+      width: 90vw;
+      max-width: 900px;
+      margin: 20px auto;
     }
-
-    /* Just placeholders to visually separate them */
-    #barChartContainer {
-      margin-bottom: 40px;
-    }
-
-    /* The canvases themselves will be sized by JS (no fixed height here). */
-    canvas {
+    /*
+      We let the chart be responsive, but fix the canvas height 
+      so it doesn't keep changing if the tooltip appears.
+    */
+    #statsChart, #momentumChart {
+      width: 100% !important;
+      height: 400px !important;  /* You can adjust this height as needed */
       display: block;
+      margin-bottom: 30px;
       background: #fff;
-      /* No default width/height in CSS; let JS set them. */
     }
   </style>
 </head>
 <body>
-  <!-- Container for the Bar Chart -->
-  <div class="chart-container" id="barChartContainer">
+  <div class="chart-container">
+    <!-- Bar Chart -->
     <canvas id="statsChart"></canvas>
-  </div>
-  <!-- Container for the Momentum Chart -->
-  <div class="chart-container" id="lineChartContainer">
+    <!-- Momentum Chart -->
     <canvas id="momentumChart"></canvas>
   </div>
 
   <script>
     /*************************************************************
-     * 1) PARSE URL PARAMS (no placeholders)
+     * A) PARSE URL PARAMS (NO PLACEHOLDERS)
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // --- A) Absolute stats for bar chart ---
+    // 1) Absolute stats for the bar chart
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -78,19 +70,18 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // If possession is also absolute (e.g., 40 vs 60)
     const possessionHome    = Number(params.get("PossessionHome")     || 0);
     const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
-    // --- B) Momentum chart arrays (CSV format) ---
+    // 2) Momentum chart arrays (CSV format)
     const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
     const rawMomentum       = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData          = rawTimeTracker.split(",").map(v => Number(v.trim()));
-    const homeMomentumData  = rawMomentum.split(",").map(v => Number(v.trim()));
-    const awayMomentumData  = homeMomentumData.map(v => 1 - v); // away = 1 - home
+    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 2) DATA ARRAYS FOR BAR CHART
+     * B) DATA ARRAYS FOR THE BAR CHART
      *************************************************************/
     const statLabels = [
       "Ball Possession",
@@ -130,11 +121,10 @@
     ];
 
     /*************************************************************
-     * 3) BUILD THE CHARTS (responsive: false)
+     * C) CREATE THE BAR CHART (Side-by-Side, No Axis)
      *************************************************************/
-    // Bar chart
-    const barCtx = document.getElementById("statsChart").getContext("2d");
-    const barChart = new Chart(barCtx, {
+    const ctxBar = document.getElementById("statsChart").getContext("2d");
+    new Chart(ctxBar, {
       type: "bar",
       data: {
         labels: statLabels,
@@ -154,7 +144,7 @@
         ]
       },
       options: {
-        responsive: false,  // manual resizing
+        responsive: true,
         maintainAspectRatio: false,
         indexAxis: "y",
         scales: {
@@ -198,7 +188,7 @@
             callbacks: {
               label: function(context) {
                 const label = context.dataset.label || "";
-                const val = context.parsed.x || 0;
+                const val   = context.parsed.x || 0;
                 return `${label}: ${val}`;
               }
             }
@@ -207,9 +197,11 @@
       }
     });
 
-    // Momentum line chart
-    const lineCtx = document.getElementById("momentumChart").getContext("2d");
-    const lineChart = new Chart(lineCtx, {
+    /*************************************************************
+     * D) CREATE THE MOMENTUM LINE CHART
+     *************************************************************/
+    const ctxLine = document.getElementById("momentumChart").getContext("2d");
+    new Chart(ctxLine, {
       type: "line",
       data: {
         labels: timeData,
@@ -219,21 +211,19 @@
             data: homeMomentumData,
             borderColor: "#e74c3c",
             borderWidth: 2,
-            radius: 0,
-            fill: false
+            radius: 0
           },
           {
             label: "Away Momentum",
             data: awayMomentumData,
             borderColor: "#3498db",
             borderWidth: 2,
-            radius: 0,
-            fill: false
+            radius: 0
           }
         ]
       },
       options: {
-        responsive: false,   // manual resizing
+        responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
@@ -301,39 +291,6 @@
         }
       }
     });
-
-    /*************************************************************
-     * 4) AUTO-RESIZE LOGIC
-     *    We'll measure each container and set the canvas size
-     *    accordingly, then call chart.update().
-     *************************************************************/
-    function resizeCharts() {
-      // Bar chart
-      const barContainer = document.getElementById("barChartContainer");
-      // Set canvas to container's dimensions
-      barChart.canvas.width  = barContainer.offsetWidth;
-      barChart.canvas.height = barContainer.offsetHeight;
-      barChart.update();
-
-      // Momentum chart
-      const lineContainer = document.getElementById("lineChartContainer");
-      lineChart.canvas.width  = lineContainer.offsetWidth;
-      lineChart.canvas.height = lineContainer.offsetHeight;
-      lineChart.update();
-    }
-
-    // DEBOUNCE helper: wait ~200ms after resize stops
-    let resizeTimer;
-    function debounceResize() {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(resizeCharts, 200);
-    }
-
-    // Fire once on page load
-    resizeCharts();
-
-    // Fire on window resize
-    window.addEventListener("resize", debounceResize);
   </script>
 </body>
 </html>
