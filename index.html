@@ -22,17 +22,23 @@
     .chart-container {
       width: 90vw;
       max-width: 900px;
-      margin: 20px auto;
+      margin: 30px auto;
       background: #fff;
       border-radius: 8px;
-      padding: 20px;
+      padding: 20px 20px 30px 20px; /* Extra padding at bottom */
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Last container needs extra bottom margin */
+    .chart-container:last-child {
+      margin-bottom: 60px;
     }
 
     #possessionChart {
       width: 100%;
-      max-width: 350px;
+      max-width: 400px;
       margin: auto;
+      min-height: 400px; /* Ensure enough height */
     }
   </style>
 </head>
@@ -150,23 +156,48 @@
     new ApexCharts(document.querySelector("#possessionChart"), {
       chart: { 
         type: "donut", 
-        height: 300,
+        height: 350,  // Increased height
         width: '100%'
       },
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
       title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "bottom" },
+      legend: { 
+        position: "bottom",
+        offsetY: 10, // Add offset to legend
+        fontSize: '14px',
+        fontFamily: 'Inter'
+      },
+      dataLabels: {
+        style: {
+          fontSize: '14px',
+          fontFamily: 'Inter',
+          fontWeight: 'bold'
+        }
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%'  // Adjust donut size
+          },
+          expandOnClick: false
+        }
+      },
       responsive: [{
         breakpoint: 480,
         options: {
           chart: {
-            height: 250
+            height: 300
           }
         }
       }]
     }).render();
+
+    // Ensure no clipping by forcing the page to recalculate layout after charts are rendered
+    setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 100);
   </script>
 
 </body>
