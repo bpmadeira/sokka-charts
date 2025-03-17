@@ -11,31 +11,34 @@
   <style>
     html, body {
       overflow: hidden; /* Hides scrollbars */
-      height: 100vh; /* Ensures full viewport height */
+      height: 130vh; /* Ensures full viewport height */
       margin: 0;
       padding: 0;
       font-family: "Inter", sans-serif;
       background: #f8f8f8;
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .chart-container {
       width: 90vw;
       max-width: 900px;
-      margin: 20px auto;
+      margin: 1vh auto;
       background: #fff;
       border-radius: 8px;
-      padding: 20px;
+      padding: 2vh;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    /* Fix Possession Chart */
-    #possessionChart {
-      width: 80vw;
-      max-width: 400px;
-      height: 700px !important;  /* FIXED HEIGHT TO PREVENT CLIPPING */
-      margin: auto;
-    }
+    /* Responsive Heights */
+    #statsChart { height: 45vh; } /* Largest */
+    #momentumChart { height: 35vh; } /* Medium */
+    #possessionChart { height: 30vh; width: 80vw; max-width: 400px; } /* Smallest */
   </style>
 </head>
 <body>
@@ -112,52 +115,11 @@
      * 3) CREATE STATS CHART (HORIZONTAL BARS)
      *************************************************************/
     new ApexCharts(document.querySelector("#statsChart"), {
-      chart: { type: "bar", height: 500 },
+      chart: { type: "bar", height: "100%" },
       series: [
         { name: "Home", data: homeStats },
         { name: "Away", data: awayStats }
       ],
       xaxis: { categories: statLabels },
       colors: [HOME_COLOR, AWAY_COLOR],
-      plotOptions: { bar: { horizontal: true, barHeight: "60%" } },
-      title: { text: "Match Stats", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "top" }
-    }).render();
-
-    /*************************************************************
-     * 4) CREATE MOMENTUM CHART (LINE GRAPH)
-     *************************************************************/
-    new ApexCharts(document.querySelector("#momentumChart"), {
-      chart: { type: "line", height: 400 },
-      series: [
-        { name: "Home Momentum", data: homeMomentumData },
-        { name: "Away Momentum", data: awayMomentumData }
-      ],
-      xaxis: { categories: timeData, title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } } },
-      yaxis: {
-        min: 0, max: 1,
-        tickAmount: 2,  // Forces labels to 0, 0.5, 1
-        labels: { formatter: (val) => val.toFixed(1), style: { fontFamily: "Inter", fontWeight: "700" } },
-        title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
-      },
-      stroke: { width: 4 },
-      colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "top" }
-    }).render();
-
-    /*************************************************************
-     * 5) CREATE POSSESSION CHART (DONUT STYLE)
-     *************************************************************/
-    new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: { type: "donut", height: 400 },  // FIXED HEIGHT ADDED
-      series: [possessionHome, possessionAway],
-      labels: ["Home", "Away"],
-      colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "bottom" }
-    }).render();
-  </script>
-
-</body>
-</html>
+      plotOptions: { bar: { horizontal: true
