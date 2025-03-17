@@ -2,15 +2,15 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Match Stats & Momentum (Responsive, No Flicker)</title>
+  <title>Match Stats & Momentum (Responsive, No Fixed Height)</title>
   <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Load the Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
-    /* Basic global styling */
     body {
       margin: 0;
       padding: 20px;
@@ -18,35 +18,30 @@
       font-family: 'Inter', sans-serif;
     }
 
-    /*
-      A container that centers the chart and limits max width on large screens.
-      On mobile, it becomes narrower than 900px.
+    /* 
+      A container to limit max width and center the chart. 
+      On a phone, it'll be narrower than 900px (e.g. ~360px).
     */
     .chart-container {
       width: 90vw;        /* 90% of viewport width */
-      max-width: 900px;   /* no bigger than 900px on large screens */
-      margin: 20px auto; 
+      max-width: 900px;   /* Cap for larger screens */
+      margin: 20px auto;
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      position: relative; /* So Chart.js can size canvas inside */
     }
 
-    /*
-      Each chart gets a fixed height in CSS, so we don't rely on aspect ratio.
-      This helps avoid flicker if the tooltip changes content size.
-      Adjust height as needed for your design.
+    /* 
+      Let the canvas fill the container's width, no fixed height. 
+      Chart.js will enforce an aspect ratio by default (2:1). 
+      Or you can set a custom ratio in your chart options. 
     */
     canvas {
       display: block;
       width: 100% !important;
-      height: 400px !important; /* You can change to 300, 500, etc. */
+      /* no height specified => use Chart.js aspect ratio */
     }
-
-    /*
-      Optionally, if you want different heights for the bar chart vs. momentum chart:
-      #statsChart { height: 450px !important; }
-      #momentumChart { height: 300px !important; }
-    */
   </style>
 </head>
 <body>
@@ -62,11 +57,11 @@
 
   <script>
     /*************************************************************
-     * A) PARSE URL PARAMS
+     * A) PARSE URL PARAMS (No Placeholders)
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // -- 1) Bar Chart Stats --
+    // 1) Absolute stats for bar chart
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -86,19 +81,19 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // e.g. 40 vs. 60
-    const possessionHome    = Number(params.get("possessionHome")     || 0);
-    const possessionAway    = Number(params.get("possessionAway")     || 0);
+    // e.g. 40 vs 60
+    const possessionHome    = Number(params.get("PossessionHome")     || 0);
+    const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
-    // -- 2) Momentum Chart Arrays --
+    // 2) Momentum chart arrays (CSV)
     const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
     const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
-    const awayMomentumData = homeMomentumData.map(v => 1 - v);
+    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * B) DATA ARRAYS FOR BAR CHART
+     * B) DATA ARRAYS FOR THE BAR CHART
      *************************************************************/
     const statLabels = [
       "Ball Possession",
@@ -138,7 +133,7 @@
     ];
 
     /*************************************************************
-     * C) BAR CHART (responsive with fixed height in CSS)
+     * C) CREATE THE BAR CHART (Responsive, Chart.js ratio)
      *************************************************************/
     const ctxBar = document.getElementById("statsChart").getContext("2d");
     new Chart(ctxBar, {
@@ -162,7 +157,10 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,  // We rely on CSS for height
+        maintainAspectRatio: true, 
+        // If you want a custom ratio instead of 2:1, do:
+        // aspectRatio: 1.7777,   // ~16:9
+
         indexAxis: "y",
         scales: {
           x: {
@@ -214,7 +212,7 @@
     });
 
     /*************************************************************
-     * D) MOMENTUM LINE CHART
+     * D) CREATE THE MOMENTUM LINE CHART
      *************************************************************/
     const ctxLine = document.getElementById("momentumChart").getContext("2d");
     new Chart(ctxLine, {
@@ -240,7 +238,9 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
+        // aspectRatio: 1.7777, // if you want ~16:9
+
         scales: {
           x: {
             title: {
