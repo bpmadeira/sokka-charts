@@ -10,13 +10,13 @@
 
   <style>
     html, body {
-      overflow: hidden; /* Hides scrollbars */
-      height: 100vh; /* Ensures full viewport height */
+      overflow-y: auto; /* Allow vertical scrolling */
       margin: 0;
       padding: 0;
       font-family: "Inter", sans-serif;
       background: #f8f8f8;
       text-align: center;
+      min-height: 100vh; /* Min height instead of fixed height */
     }
 
     .chart-container {
@@ -30,9 +30,8 @@
     }
 
     #possessionChart {
-      width: 60vw;
+      width: 100%;
       max-width: 350px;
-      aspect-ratio: 1/1; /* Keeps it circular */
       margin: auto;
     }
   </style>
@@ -111,7 +110,7 @@
      * 3) CREATE STATS CHART (HORIZONTAL BARS)
      *************************************************************/
     new ApexCharts(document.querySelector("#statsChart"), {
-      chart: { type: "bar", height: 500 },
+      chart: { type: "bar", height: 400 },
       series: [
         { name: "Home", data: homeStats },
         { name: "Away", data: awayStats }
@@ -127,7 +126,7 @@
      * 4) CREATE MOMENTUM CHART (LINE GRAPH)
      *************************************************************/
     new ApexCharts(document.querySelector("#momentumChart"), {
-      chart: { type: "line", height: 400 },
+      chart: { type: "line", height: 350 },
       series: [
         { name: "Home Momentum", data: homeMomentumData },
         { name: "Away Momentum", data: awayMomentumData }
@@ -149,12 +148,24 @@
      * 5) CREATE POSSESSION CHART (DONUT STYLE)
      *************************************************************/
     new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: { type: "donut", height: 350 },
+      chart: { 
+        type: "donut", 
+        height: 300,
+        width: '100%'
+      },
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
       title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "bottom" }
+      legend: { position: "bottom" },
+      responsive: [{
+        breakpoint: 480,
+        options: {
+          chart: {
+            height: 250
+          }
+        }
+      }]
     }).render();
   </script>
 
