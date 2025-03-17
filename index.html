@@ -7,44 +7,45 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-
+  
   <style>
-    hhtml, body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden; /* Avoid unnecessary scrollbars */
-    font-family: "Inter", sans-serif;
-    background: #f8f8f8;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  /* General Chart Container */
-  .chart-container {
-    width: 90vw; /* Full width on mobile, limited on desktop */
-    max-width: 900px;
-    background: #fff;
-    border-radius: 8px;
-    padding: 2vh;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  /* Individual Chart Heights (Flexible) */
-  #statsChart { height: 40vh; min-height: 350px; }  /* Stats Chart - largest */
-  #momentumChart { height: 35vh; min-height: 300px; }  /* Medium size */
-  #possessionChart { height: 30vh; width: 80vw; max-width: 400px; min-height: 280px; }  /* Smallest */
+    /* Prevents scrolling issues */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      font-family: "Inter", sans-serif;
+      background: #f8f8f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
 
+    /* General Chart Container */
+    .chart-container {
+      width: 90vw;
+      max-width: 900px;
+      background: #fff;
+      border-radius: 8px;
+      padding: 2vh;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 2vh;
+    }
+
+    /* Individual Chart Heights (Flexible) */
+    #statsChart { height: 40vh; min-height: 350px; }
+    #momentumChart { height: 35vh; min-height: 300px; }
+    #possessionChart { height: 30vh; width: 80vw; max-width: 400px; min-height: 280px; }
   </style>
 </head>
 <body>
 
-  <!-- 1) Stats Chart -->
+  <!-- 1) Match Stats -->
   <div class="chart-container">
     <div id="statsChart"></div>
   </div>
@@ -63,60 +64,35 @@
     /*************************************************************
      * 1) GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048"; // Red for Home
-    const AWAY_COLOR = "#2c2c2c"; // Dark Gray for Away
+    const HOME_COLOR = "#fa3048";  // Red for Home
+    const AWAY_COLOR = "#2c2c2c";  // Dark Gray for Away
 
     /*************************************************************
-     * 2) PARSE URL PARAMS (NO PLACEHOLDERS)
+     * 2) HARDCODED DATA (No Placeholders)
      *************************************************************/
-    const params = new URLSearchParams(window.location.search);
-
-    // Possession
-    const possessionHome = Number(params.get("possessionHome") || 50);
-    const possessionAway = Number(params.get("possessionAway") || 50);
+    // Ball Possession
+    const possessionHome = 47;
+    const possessionAway = 53;
 
     // Stats (Shots, Fouls, etc.)
-    const homeStats = [
-      Number(params.get("home_shots") || 0),
-      Number(params.get("home_shots_on_goal") || 0),
-      Number(params.get("home_goal_chances") || 0),
-      Number(params.get("home_duels_won") || 0),
-      Number(params.get("home_saves") || 0),
-      Number(params.get("home_corners") || 0),
-      Number(params.get("home_fouls") || 0),
-      Number(params.get("home_yellows") || 0),
-      Number(params.get("home_reds") || 0)
-    ];
-
-    const awayStats = [
-      Number(params.get("away_shots") || 0),
-      Number(params.get("away_shots_on_goal") || 0),
-      Number(params.get("away_goal_chances") || 0),
-      Number(params.get("away_duels_won") || 0),
-      Number(params.get("away_saves") || 0),
-      Number(params.get("away_corners") || 0),
-      Number(params.get("away_fouls") || 0),
-      Number(params.get("away_yellows") || 0),
-      Number(params.get("away_reds") || 0)
-    ];
+    const homeStats = [15, 11, 1, 13, 8, 2, 5, 1, 1];
+    const awayStats = [11, 10, 2, 11, 9, 4, 4, 5, 0];
 
     const statLabels = [
       "Shots", "Shots on Goal", "Goal Chances", "Duels Won",
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
 
-    // Momentum
-    const rawTimeTracker = params.get("time_tracker") || "0,15,30,45,60,75,90";
-    const rawMomentum = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
+    // Momentum Data
+    const timeData = [0, 15, 30, 45, 60, 75, 90];
+    const homeMomentumData = [0.5, 0.55, 0.6, 0.55, 0.4, 0.7, 0.6];
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
      * 3) CREATE STATS CHART (HORIZONTAL BARS)
      *************************************************************/
     new ApexCharts(document.querySelector("#statsChart"), {
-      chart: { type: "bar", height: "100%" },
+      chart: { type: "bar", height: "100%", width: "100%" },
       series: [
         { name: "Home", data: homeStats },
         { name: "Away", data: awayStats }
@@ -124,7 +100,13 @@
       xaxis: { categories: statLabels },
       colors: [HOME_COLOR, AWAY_COLOR],
       plotOptions: { bar: { horizontal: true, barHeight: "60%" } },
-      title: { text: "Match Stats", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
+      responsive: [{
+        breakpoint: 768,
+        options: {
+          plotOptions: { bar: { barHeight: "50%" } }
+        }
+      }],
+      title: { text: "Match Stats", align: "center" },
       legend: { position: "top" }
     }).render();
 
@@ -132,36 +114,37 @@
      * 4) CREATE MOMENTUM CHART (LINE GRAPH)
      *************************************************************/
     new ApexCharts(document.querySelector("#momentumChart"), {
-      chart: { type: "line", height: "100%" },
+      chart: { type: "line", height: "100%", width: "100%" },
       series: [
         { name: "Home Momentum", data: homeMomentumData },
         { name: "Away Momentum", data: awayMomentumData }
       ],
-      xaxis: { categories: timeData, title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } } },
+      xaxis: {
+        categories: timeData,
+        labels: { rotate: 0, style: { fontSize: "12px" } },
+        title: { text: "Time (minutes)" }
+      },
       yaxis: {
         min: 0, max: 1,
-        tickAmount: 2,  // Forces labels to 0, 0.5, 1
-        labels: { formatter: (val) => val.toFixed(1), style: { fontFamily: "Inter", fontWeight: "700" } },
-        title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
+        tickAmount: 2,
+        labels: { formatter: (val) => val.toFixed(1) }
       },
       stroke: { width: 4 },
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "top" }
+      title: { text: "Momentum Over Time", align: "center" }
     }).render();
 
     /*************************************************************
-     * 5) CREATE POSSESSION CHART (DONUT STYLE)
+     * 5) CREATE POSSESSION CHART (DONUT CHART)
      *************************************************************/
     new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: { type: "donut", height: "100%" },  // HEIGHT IS NOW RESPONSIVE
+      chart: { type: "donut", height: "100%", width: "100%" },
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
+      title: { text: "Ball Possession", align: "center" },
       legend: { position: "bottom" }
     }).render();
   </script>
-
 </body>
 </html>
