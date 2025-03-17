@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Absolute Horizontal Bars + Momentum Chart</title>
+  <meta charset="utf-8" />
+  <title>One Chart Per Stat + Momentum</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,15 +12,16 @@
       margin: 0;
       padding: 20px;
       background: #f8f8f8;
-      font-family: 'Inter', sans-serif;
-      text-align: center;  /* center the canvases horizontally */
+      font-family: "Inter", sans-serif;
+      text-align: center; /* to center canvases horizontally */
     }
 
-    /* 
-      Each <canvas> is up to 90% viewport width, capped at 900px,
-      centered horizontally (margin auto).
+    /*
+      We'll place each stat chart in its own canvas, up to 90% viewport width, 
+      max 900px, with some vertical margin. 
     */
-    canvas {
+    .stat-canvas,
+    #momentumChart {
       display: inline-block;
       width: 90vw;
       max-width: 900px;
@@ -32,26 +33,25 @@
   </style>
 </head>
 <body>
+  <!-- We'll dynamically insert canvases for each stat here -->
+  <div id="stats-container"></div>
 
-  <!-- Horizontal Bar Chart with Absolute Values, Label on the Left -->
-  <canvas id="statsChart"></canvas>
-
-  <!-- Momentum Line Chart (Triple-Thick Lines) -->
+  <!-- One canvas for the momentum line chart -->
   <canvas id="momentumChart"></canvas>
 
   <script>
     /*************************************************************
-     * 1) GLOBAL COLORS
+     * 1) GLOBAL COLOR VARIABLES (HOME/AWAY)
      *************************************************************/
-    const HOME_COLOR = "#fa3048"; 
+    const HOME_COLOR = "#fa3048";
     const AWAY_COLOR = "#2c2c2c";
 
     /*************************************************************
-     * 2) PARSE URL PARAMS
+     * 2) PARSE URL PARAMS (no placeholders)
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // --- A) Bar Chart Stats (absolute values)
+    // Stats
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -74,151 +74,131 @@
     const possessionHome    = Number(params.get("possessionHome")     || 0);
     const possessionAway    = Number(params.get("possessionAway")     || 0);
 
-    // --- B) Momentum chart data (CSV)
-    const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
-    const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
-    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
+    // Momentum
+    const rawTimeTracker = params.get("time_tracker")    || "0,15,30,45,60,75,90";
+    const rawMomentum    = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const timeData       = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) BUILD ARRAYS FOR HORIZONTAL ABSOLUTE BAR CHART
+     * 3) BUILD AN ARRAY OF STAT OBJECTS (one per chart)
+     *    Each object has { label, homeValue, awayValue }
      *************************************************************/
-    const statLabels = [
-      "Ball Possession",
-      "Shots",
-      "Shots on Goal",
-      "Goal Chances",
-      "Duels Won",
-      "Saves",
-      "Corners",
-      "Fouls",
-      "Yellows",
-      "Reds"
-    ];
-
-    const homeVals = [
-      possessionHome,
-      homeShots,
-      homeShotsOnGoal,
-      homeGoalChances,
-      homeDuelsWon,
-      homeSaves,
-      homeCorners,
-      homeFouls,
-      homeYellows,
-      homeReds
-    ];
-
-    const awayVals = [
-      possessionAway,
-      awayShots,
-      awayShotsOnGoal,
-      awayGoalChances,
-      awayDuelsWon,
-      awaySaves,
-      awayCorners,
-      awayFouls,
-      awayYellows,
-      awayReds
+    const statsArray = [
+      { label: "Ball Possession", homeValue: possessionHome, awayValue: possessionAway },
+      { label: "Shots",           homeValue: homeShots,      awayValue: awayShots },
+      { label: "Shots on Goal",   homeValue: homeShotsOnGoal,awayValue: awayShotsOnGoal },
+      { label: "Goal Chances",    homeValue: homeGoalChances,awayValue: awayGoalChances },
+      { label: "Duels Won",       homeValue: homeDuelsWon,   awayValue: awayDuelsWon },
+      { label: "Saves",           homeValue: homeSaves,      awayValue: awaySaves },
+      { label: "Corners",         homeValue: homeCorners,    awayValue: awayCorners },
+      { label: "Fouls",           homeValue: homeFouls,      awayValue: awayFouls },
+      { label: "Yellows",         homeValue: homeYellows,    awayValue: awayYellows },
+      { label: "Reds",            homeValue: homeReds,       awayValue: awayReds },
     ];
 
     /*************************************************************
-     * 4) STATS CHART CONFIG: Horizontal, Side-by-Side
-     *    Extra vertical spacing with barPercentage & categoryPercentage
+     * 4) DYNAMICALLY CREATE ONE CHART PER STAT
      *************************************************************/
-    let delayed = false;
-    new Chart(document.getElementById("statsChart"), {
-      type: 'bar',
-      data: {
-        labels: statLabels,
-        datasets: [
-          {
-            label: "Home",
-            data: homeVals,
-            backgroundColor: HOME_COLOR,
-            borderRadius: 6
-          },
-          {
-            label: "Away",
-            data: awayVals,
-            backgroundColor: AWAY_COLOR,
-            borderRadius: 6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        indexAxis: 'y', // horizontal bars
-        elements: {
-          bar: {
-            barPercentage: 0.7,      // thickness of each bar
-            categoryPercentage: 0.6  // spacing between rows
-          }
-        },
-        animation: {
-          onComplete: () => { delayed = true; },
-          delay: (ctx) => {
-            let delay = 0;
-            if (ctx.type === 'data' && ctx.mode === 'default' && !delayed) {
-              // stagger each bar's appearance
-              delay = ctx.dataIndex * 300 + ctx.datasetIndex * 100;
+    const statsContainer = document.getElementById("stats-container");
+
+    statsArray.forEach((stat, index) => {
+      // Create a <canvas> for this stat
+      const canvas = document.createElement("canvas");
+      canvas.className = "stat-canvas";
+      canvas.id = `chart-${stat.label.replace(/\s+/g, '-')}`;
+      statsContainer.appendChild(canvas);
+
+      // Build the chart
+      new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: [ stat.label ], // single category => one row
+          datasets: [
+            {
+              label: "Home",
+              data: [ stat.homeValue ],
+              backgroundColor: HOME_COLOR,
+              borderRadius: 6
+            },
+            {
+              label: "Away",
+              data: [ stat.awayValue ],
+              backgroundColor: AWAY_COLOR,
+              borderRadius: 6
             }
-            return delay;
-          }
+          ]
         },
-        scales: {
-          x: {
-            beginAtZero: true,
-            // you can show ticks if you want numeric scale
-            grid: { display: true },
-            ticks: {
-              font: { family: 'Inter', weight: '700' },
-              color: '#666'
-            }
-          },
-          y: {
-            // y-axis category labels on the left
-            grid: { display: false },
-            border: { display: false },
-            ticks: {
-              color: "#000",
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          indexAxis: "y", // horizontal bar
+          plugins: {
+            title: {
+              display: true,
+              text: stat.label, // chart title is the stat label
               font: {
                 family: "Inter",
-                weight: "700"
+                weight: "700",
+                size: 16
+              },
+              padding: {
+                top: 10,
+                bottom: 10
               }
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              font: { family: 'Inter', weight: '700' }
+            },
+            legend: {
+              // only show legend for the first chart
+              display: (index === 0),
+              position: "top",
+              labels: {
+                font: { family: "Inter", weight: "700" }
+              }
+            },
+            tooltip: {
+              titleFont: { family: "Inter", weight: "700" },
+              bodyFont:  { family: "Inter" },
+              callbacks: {
+                label: (ctx) => {
+                  const val = ctx.parsed.x || 0;
+                  const who = ctx.dataset.label || "";
+                  return `${who}: ${val}`;
+                }
+              }
             }
           },
-          tooltip: {
-            titleFont:  { family: 'Inter', weight: '700' },
-            bodyFont:   { family: 'Inter' },
-            callbacks: {
-              label: (context) => {
-                const label = context.dataset.label || "";
-                const val   = context.parsed.x || 0;
-                return `${label}: ${val}`;
-              }
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                font: { family: "Inter", weight: "700" },
+                color: "#666"
+              },
+              grid: { display: true }
+            },
+            y: {
+              // we have only one category => single row
+              ticks: { display: false },  // hide that single label
+              grid: { display: false },
+            }
+          },
+          // extra space between bars
+          elements: {
+            bar: {
+              barPercentage: 0.6,       // thickness
+              categoryPercentage: 0.8   // vertical spacing
             }
           }
         }
-      }
+      });
     });
 
     /*************************************************************
-     * 5) MOMENTUM LINE CHART: triple thickness, y-axis up to 1.2
+     * 5) MOMENTUM LINE CHART (TRIPLE-THICK LINES, Y up to 1.2)
      *************************************************************/
-    new Chart(document.getElementById("momentumChart"), {
-      type: 'line',
+    new Chart(document.getElementById("momentumChart").getContext("2d"), {
+      type: "line",
       data: {
         labels: timeData,
         datasets: [
@@ -226,7 +206,7 @@
             label: "Home Momentum",
             data: homeMomentumData,
             borderColor: HOME_COLOR,
-            borderWidth: 6,
+            borderWidth: 6, // triple thick
             radius: 0
           },
           {
@@ -247,10 +227,10 @@
             title: {
               display: true,
               text: "Time (minutes)",
-              font: { family: 'Inter', weight: '700' }
+              font: { family: "Inter", weight: "700" }
             },
             ticks: {
-              font: { family: 'Inter', weight: '700' }
+              font: { family: "Inter", weight: "700" }
             }
           },
           y: {
@@ -259,10 +239,10 @@
             title: {
               display: true,
               text: "Momentum",
-              font: { family: 'Inter', weight: '700' }
+              font: { family: "Inter", weight: "700" }
             },
             ticks: {
-              font: { family: 'Inter', weight: '700' }
+              font: { family: "Inter", weight: "700" }
             }
           }
         },
@@ -270,14 +250,14 @@
           legend: {
             position: 'top',
             labels: {
-              font: { family: 'Inter', weight: '700' }
+              font: { family: "Inter", weight: "700" }
             }
           },
           tooltip: {
             mode: 'index',
             intersect: false,
-            titleFont: { family: 'Inter', weight: '700' },
-            bodyFont:  { family: 'Inter' }
+            titleFont: { family: "Inter", weight: "700" },
+            bodyFont:  { family: "Inter" }
           }
         },
         interaction: {
