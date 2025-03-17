@@ -132,12 +132,32 @@
      * 4) CREATE MOMENTUM CHART (LINE GRAPH)
      *************************************************************/
     new ApexCharts(document.querySelector("#momentumChart"), {
-      chart: { type: "line", height: 350 },
+      chart: { 
+        type: "line", 
+        height: 350,
+        zoom: {
+          enabled: false // Disable zoom functionality
+        },
+        toolbar: {
+          show: false // Hide toolbar (which includes zoom controls)
+        }
+      },
       series: [
         { name: "Home Momentum", data: homeMomentumData },
         { name: "Away Momentum", data: awayMomentumData }
       ],
-      xaxis: { categories: timeData, title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } } },
+      xaxis: { 
+        categories: timeData, 
+        title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } },
+        tickAmount: 3, // Make x-axis labels more sparse by showing fewer ticks
+        labels: {
+          rotate: 0,
+          style: {
+            fontFamily: "Inter",
+            fontWeight: "700"
+          }
+        }
+      },
       yaxis: {
         min: 0, max: 1,
         tickAmount: 2,  // Forces labels to 0, 0.5, 1
