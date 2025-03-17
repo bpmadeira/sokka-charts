@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Separate Ball Possession (Smaller Bars) & Stats (Bigger Bars) + Momentum</title>
+  <title>Ball Possession (Smaller Bars), Stats (Bigger Bars) + Momentum</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +17,8 @@
     }
 
     /*
-      Each canvas is up to 90% viewport width, 900px max.
-      No fixed height => Chart.js uses its default ratio (2:1).
+      Each canvas can be up to 90% viewport width and 900px max.
+      We rely on Chart.js's maintainAspectRatio for a 2:1 ratio (unless changed).
     */
     canvas {
       display: inline-block;
@@ -39,18 +39,18 @@
   <!-- Single chart for all other stats, bigger bars -->
   <canvas id="statsChart"></canvas>
 
-  <!-- Momentum Chart -->
+  <!-- Momentum Line Chart -->
   <canvas id="momentumChart"></canvas>
 
   <script>
     /*************************************************************
      * 1) GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048";
-    const AWAY_COLOR = "#2c2c2c";
+    const HOME_COLOR = "#fa3048"; // Home color
+    const AWAY_COLOR = "#2c2c2c"; // Away color
 
     /*************************************************************
-     * 2) PARSE URL PARAMS (No placeholders)
+     * 2) PARSE URL PARAMS
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
@@ -86,13 +86,13 @@
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) CREATE POSSESSION CHART (Small Bars)
+     * 3) CREATE POSSESSION CHART (Smaller bars)
      *************************************************************/
     (function createPossessionChart() {
       new Chart(document.getElementById("possessionChart").getContext("2d"), {
         type: "bar",
         data: {
-          labels: ["Ball Possession"], // single row
+          labels: ["Ball Possession"],
           datasets: [
             {
               label: "Home",
@@ -144,8 +144,8 @@
           },
           elements: {
             bar: {
-              // Smaller bars for possession
-              barPercentage: 0.25,
+              // Slightly smaller bars for possession
+              barPercentage: 0.2,
               categoryPercentage: 0.5
             }
           },
@@ -168,7 +168,7 @@
     })();
 
     /*************************************************************
-     * 4) CREATE STATS CHART (Shots, etc.) with Bigger Bars
+     * 4) CREATE SINGLE STATS CHART (Bigger Bars + More Spacing)
      *************************************************************/
     const statLabels = [
       "Shots",
@@ -233,7 +233,7 @@
           plugins: {
             title: {
               display: true,
-              text: "Stats",  // "Stats" instead of "All Other Stats"
+              text: "Stats",
               font: {
                 family: "Inter",
                 weight: "700",
@@ -262,9 +262,13 @@
           },
           elements: {
             bar: {
-              // Larger bars, plus more spacing between categories
-              barPercentage: 0.7,
-              categoryPercentage: 0.8
+              /*
+                barPercentage: how thick each bar is.
+                categoryPercentage: spacing between rows.
+                Increase these for bigger bars & more row spacing.
+              */
+              barPercentage: 0.8,
+              categoryPercentage: 0.9
             }
           },
           scales: {
