@@ -2,10 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Match Stats & Momentum (Responsive, No Fixed Height)</title>
+  <title>Match Stats & Momentum (Global Colors)</title>
   <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load the Inter font -->
+  <!-- Load Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
@@ -18,29 +18,23 @@
       font-family: 'Inter', sans-serif;
     }
 
-    /* 
-      A container to limit max width and center the chart. 
-      On a phone, it'll be narrower than 900px (e.g. ~360px).
-    */
     .chart-container {
-      width: 90vw;        /* 90% of viewport width */
-      max-width: 900px;   /* Cap for larger screens */
-      margin: 20px auto;
+      width: 90vw;         /* 90% of viewport width */
+      max-width: 900px;    /* up to 900px on larger screens */
+      margin: 20px auto;   /* center horizontally */
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      position: relative; /* So Chart.js can size canvas inside */
     }
 
-    /* 
-      Let the canvas fill the container's width, no fixed height. 
-      Chart.js will enforce an aspect ratio by default (2:1). 
-      Or you can set a custom ratio in your chart options. 
+    /*
+      Fixed canvas height so bars/lines won't stretch awkwardly on wide screens.
+      The chart is still responsive horizontally, filling .chart-container's width.
     */
     canvas {
       display: block;
       width: 100% !important;
-      /* no height specified => use Chart.js aspect ratio */
+      height: 400px !important; 
     }
   </style>
 </head>
@@ -57,11 +51,17 @@
 
   <script>
     /*************************************************************
-     * A) PARSE URL PARAMS (No Placeholders)
+     * 1) DEFINE GLOBAL COLOR VARIABLES FOR HOME & AWAY
+     *************************************************************/
+    const HOME_COLOR = "#fa3048";  // or "#e74c3c" if you prefer
+    const AWAY_COLOR = "#2c2c2c";  // black/charcoal for both bar & line
+
+    /*************************************************************
+     * 2) PARSE URL PARAMS (no placeholders)
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // 1) Absolute stats for bar chart
+    // --- Bar Chart Stats ---
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -81,19 +81,19 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // e.g. 40 vs 60
-    const possessionHome    = Number(params.get("PossessionHome")     || 0);
-    const possessionAway    = Number(params.get("PossessionAway")     || 0);
+    const possessionHome    = Number(params.get("possessionHome")     || 0);
+    const possessionAway    = Number(params.get("possessionAway")     || 0);
 
-    // 2) Momentum chart arrays (CSV)
+    // --- Momentum chart arrays (CSV) ---
     const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
     const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
-    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
+    const timeData = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
+    // away = 1 - home
+    const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * B) DATA ARRAYS FOR THE BAR CHART
+     * 3) BUILD DATA ARRAYS FOR THE BAR CHART
      *************************************************************/
     const statLabels = [
       "Ball Possession",
@@ -133,7 +133,7 @@
     ];
 
     /*************************************************************
-     * C) CREATE THE BAR CHART (Responsive, Chart.js ratio)
+     * 4) RENDER THE BAR CHART (Side-by-Side, No Axis Lines)
      *************************************************************/
     const ctxBar = document.getElementById("statsChart").getContext("2d");
     new Chart(ctxBar, {
@@ -144,23 +144,20 @@
           {
             label: "Home",
             data: homeValues,
-            backgroundColor: "#fa3048",
+            backgroundColor: HOME_COLOR,
             borderRadius: 6
           },
           {
             label: "Away",
             data: awayValues,
-            backgroundColor: "#2c2c2c",
+            backgroundColor: AWAY_COLOR,
             borderRadius: 6
           }
         ]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true, 
-        // If you want a custom ratio instead of 2:1, do:
-        // aspectRatio: 1.7777,   // ~16:9
-
+        maintainAspectRatio: false, // rely on fixed canvas height in CSS
         indexAxis: "y",
         scales: {
           x: {
@@ -200,9 +197,9 @@
               family: "Inter"
             },
             callbacks: {
-              label: function(context) {
+              label: (context) => {
                 const label = context.dataset.label || "";
-                const val   = context.parsed.x || 0;
+                const val = context.parsed.x || 0;
                 return `${label}: ${val}`;
               }
             }
@@ -212,7 +209,7 @@
     });
 
     /*************************************************************
-     * D) CREATE THE MOMENTUM LINE CHART
+     * 5) RENDER THE MOMENTUM LINE CHART (Using the same colors)
      *************************************************************/
     const ctxLine = document.getElementById("momentumChart").getContext("2d");
     new Chart(ctxLine, {
@@ -223,14 +220,14 @@
           {
             label: "Home Momentum",
             data: homeMomentumData,
-            borderColor: "#e74c3c",
+            borderColor: HOME_COLOR, // same home color as bar chart
             borderWidth: 2,
             radius: 0
           },
           {
             label: "Away Momentum",
             data: awayMomentumData,
-            borderColor: "#3498db",
+            borderColor: AWAY_COLOR, // same away color as bar chart
             borderWidth: 2,
             radius: 0
           }
@@ -238,9 +235,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
-        // aspectRatio: 1.7777, // if you want ~16:9
-
+        maintainAspectRatio: false,
         scales: {
           x: {
             title: {
