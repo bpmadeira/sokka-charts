@@ -2,58 +2,60 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>No Container Demo, Animations</title>
+  <title>Stats & Momentum: No Containers, Custom Animations</title>
+  <!-- Load Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Load Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
+    /* Basic page styling */
     body {
       margin: 0;
-      padding: 5px;
+      padding: 10px;
       background: #f8f8f8;
-      font-family: 'Inter', sans-serif;
-      text-align: center;   /* just to center the canvases horizontally */
+      font-family: "Inter", sans-serif;
+      text-align: center;  /* center the canvases horizontally */
     }
-
-    /* 
-      Two plain canvases, each up to 90% viewport width or 900px, 
-      with a default 2:1 aspect ratio from Chart.js if not overridden.
-      No extra container <div> needed.
+    /*
+      Two <canvas> elements, each up to 90% of viewport width, 
+      capped at 900px, and auto-centered with margin. 
+      No fixed height => Chart.js maintains aspect ratio by default.
     */
     canvas {
       display: inline-block;
       width: 90vw;
       max-width: 900px;
-      margin: 5px auto;
+      margin: 10px auto;
       background: #fff;
-      border-radius: 5px;
+      border-radius: 4px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
 
-  <!-- Bar Chart for Stats (with delayed animation) -->
+  <!-- Vertical Bar Chart (Stats) -->
   <canvas id="statsChart"></canvas>
 
-  <!-- Momentum Line Chart (simple line animation) -->
+  <!-- Momentum Line Chart -->
   <canvas id="momentumChart"></canvas>
 
   <script>
     /*************************************************************
      * 1) GLOBAL COLOR VARIABLES
      *************************************************************/
-    const HOME_COLOR = "#fa3048";
-    const AWAY_COLOR = "#2c2c2c";
+    const HOME_COLOR = "#fa3048"; // Pinkish-red
+    const AWAY_COLOR = "#2c2c2c"; // Dark gray
 
     /*************************************************************
      * 2) PARSE URL PARAMS
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // A) Bar Chart Stats
+    // A) Stats for the bar chart
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -76,15 +78,16 @@
     const possessionHome    = Number(params.get("possessionHome")     || 0);
     const possessionAway    = Number(params.get("possessionAway")     || 0);
 
-    // B) Momentum Chart Data
+    // B) Momentum chart data (CSV)
     const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
     const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
     const timeData = rawTimeTracker.split(",").map(x => Number(x.trim()));
     const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
+    // away momentum = 1 - home
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) BAR CHART DATA
+     * 3) BUILD THE STATS BARCHART DATA
      *************************************************************/
     const statLabels = [
       "Ball Possession",
@@ -111,7 +114,6 @@
       homeYellows,
       homeReds
     ];
-
     const awayValues = [
       possessionAway,
       awayShots,
@@ -126,11 +128,51 @@
     ];
 
     /*************************************************************
-     * 4) BAR CHART CONFIG (with delayed animation)
+     * 4) CUSTOM PLUGIN: PLACE STAT LABEL ABOVE EACH BAR PAIR
+     *    We'll find the midpoint between the Home & Away bars 
+     *    in each category and draw the category label above them.
      *************************************************************/
-    let delayed = false;  // track if animation ran
+    const statLabelsPlugin = {
+      id: 'statLabelsPlugin',
+      afterDatasetsDraw(chart) {
+        const { ctx, data, chartArea, scales } = chart;
+        const metaHome = chart.getDatasetMeta(0); // first dataset meta
+        const metaAway = chart.getDatasetMeta(1); // second dataset meta
+        if (!metaHome || !metaAway) return;
 
-    const barChartConfig = {
+        data.labels.forEach((label, i) => {
+          const barHome = metaHome.data[i];
+          const barAway = metaAway.data[i];
+          if (!barHome || !barAway) return;
+
+          // barHome.x, barAway.x -> the horizontal position of each bar
+          // barHome.y -> top of the bar if indexAxis: 'x'
+          const homeProps = barHome.getProps(['x','y'], true);
+          const awayProps = barAway.getProps(['x','y'], true);
+
+          // find midpoint x
+          const midX = (homeProps.x + awayProps.x) / 2;
+          // y is top of whichever bar is taller
+          const topY = Math.min(homeProps.y, awayProps.y);
+
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillStyle = '#000';
+          ctx.font = '700 14px Inter';
+          // draw label ~ 4px above the top bar
+          ctx.fillText(label, midX, topY - 4);
+          ctx.restore();
+        });
+      }
+    };
+
+    /*************************************************************
+     * 5) BUILD THE STATS CHART CONFIG (VERTICAL BARS)
+     *    Using a delayed animation for each bar.
+     *************************************************************/
+    let delayed = false;
+    const statsChartConfig = {
       type: 'bar',
       data: {
         labels: statLabels,
@@ -151,16 +193,13 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true, // default ratio (2:1) unless you set aspectRatio yourself
-        indexAxis: 'y',
+        maintainAspectRatio: true,  // Chart.js default ratio (2:1)
         animation: {
-          onComplete: () => {
-            delayed = true;
-          },
+          onComplete: () => { delayed = true; },
           delay: (context) => {
             let delay = 0;
             if (context.type === 'data' && context.mode === 'default' && !delayed) {
-              // e.g. stagger the bars by dataIndex
+              // stagger each bar by dataIndex
               delay = context.dataIndex * 300 + context.datasetIndex * 100;
             }
             return delay;
@@ -168,20 +207,15 @@
         },
         scales: {
           x: {
-            grid: { display: false },
+            // categories along x axis, but let's hide them:
             ticks: { display: false },
-            beginAtZero: true
+            grid: { display: false },
           },
           y: {
+            // numeric scale, hidden labels:
+            ticks: { display: false },
             grid: { display: false },
-            border: { display: false },
-            ticks: {
-              color: "#000",
-              font: {
-                family: "Inter",
-                weight: "700"
-              }
-            }
+            beginAtZero: true
           }
         },
         plugins: {
@@ -206,23 +240,24 @@
             callbacks: {
               label: (context) => {
                 const label = context.dataset.label || "";
-                const val   = context.parsed.x || 0;
+                const val   = context.parsed.y || 0; 
                 return `${label}: ${val}`;
               }
             }
           }
         }
-      }
+      },
+      plugins: [statLabelsPlugin]  // our custom label plugin
     };
 
-    // Create the stats chart
-    const statsCtx = document.getElementById("statsChart").getContext("2d");
-    new Chart(statsCtx, barChartConfig);
+    // create the stats chart
+    new Chart(document.getElementById("statsChart").getContext("2d"), statsChartConfig);
 
     /*************************************************************
-     * 5) MOMENTUM CHART CONFIG (simple line animation)
+     * 6) MOMENTUM LINE CHART
+     *    Triple thickness (borderWidth: 6), y-axis up to 1.2
      *************************************************************/
-    const momentumLineConfig = {
+    const momentumChartConfig = {
       type: 'line',
       data: {
         labels: timeData,
@@ -231,14 +266,14 @@
             label: "Home Momentum",
             data: homeMomentumData,
             borderColor: HOME_COLOR,
-            borderWidth: 1,
+            borderWidth: 6,  // triple thickness
             radius: 0
           },
           {
             label: "Away Momentum",
             data: awayMomentumData,
             borderColor: AWAY_COLOR,
-            borderWidth: 1,
+            borderWidth: 6,
             radius: 0
           }
         ]
@@ -246,28 +281,8 @@
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        // simple animation object from your snippet
-        animation: {
-          duration: 1000, // or customize
-        },
-        interaction: {
-          intersect: false
-        },
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: {
-              font: {
-                family: "Inter",
-                weight: "700"
-              }
-            }
-          }
-        },
         scales: {
           x: {
-            type: 'linear',
             title: {
               display: true,
               text: "Time (minutes)",
@@ -281,9 +296,13 @@
                 family: "Inter",
                 weight: "700"
               }
-            }
+            },
+            grid: { display: true },
+            type: 'linear',   // so we can plot times as numeric
           },
           y: {
+            min: 0,
+            max: 1.2,  // extra space above 1
             title: {
               display: true,
               text: "Momentum",
@@ -298,17 +317,40 @@
                 weight: "700"
               }
             },
-            min: 0,
-            max: 1
+            grid: { display: true }
           }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            titleFont: {
+              family: "Inter",
+              weight: "700"
+            },
+            bodyFont: {
+              family: "Inter"
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
         }
       }
     };
 
-    // Create the momentum chart
-    const momentumCtx = document.getElementById("momentumChart").getContext("2d");
-    new Chart(momentumCtx, momentumLineConfig);
-
+    // create the momentum chart
+    new Chart(document.getElementById("momentumChart").getContext("2d"), momentumChartConfig);
   </script>
 </body>
 </html>
