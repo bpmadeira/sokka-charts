@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Match Stats & Momentum</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
@@ -14,55 +14,44 @@
       height: 100vh; /* Ensures full viewport height */
       margin: 0;
       padding: 0;
+      font-family: "Inter", sans-serif;
+      background: #f8f8f8;
+      text-align: center;
     }
 
-    /* 1) Stats Chart: largest */
-    #statsCanvas {
-      display: block;
+    .chart-container {
       width: 90vw;
-      max-width: 1000px;
-      height: 600px; /* Bigger for multiple bars */
+      max-width: 900px;
       margin: 20px auto;
       background: #fff;
       border-radius: 8px;
+      padding: 20px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
 
-    /* 2) Momentum Chart */
-    #momentumCanvas {
-      display: block;
-      width: 90vw;
-      max-width: 1000px;
-      height: 500px; /* Medium size */
-      margin: 20px auto;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-
-    /* 3) Possession Chart: Smallest */
-    #possessionCanvas {
-      display: block;
-      width: 80vw;
-      max-width: 700px; /* Smallest size */
-      height: auto; /* Auto height for radial */
-      margin: 20px auto;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    #possessionChart {
+      width: 60vw;
+      max-width: 350px;
+      aspect-ratio: 1/1; /* Keeps it circular */
     }
   </style>
 </head>
 <body>
 
   <!-- 1) Stats Chart -->
-  <canvas id="statsCanvas"></canvas>
+  <div class="chart-container">
+    <div id="statsChart"></div>
+  </div>
 
   <!-- 2) Momentum Chart -->
-  <canvas id="momentumCanvas"></canvas>
+  <div class="chart-container">
+    <div id="momentumChart"></div>
+  </div>
 
-  <!-- 3) Possession Chart (Doughnut) -->
-  <canvas id="possessionCanvas"></canvas>
+  <!-- 3) Possession Chart -->
+  <div class="chart-container">
+    <div id="possessionChart"></div>
+  </div>
 
   <script>
     /*************************************************************
@@ -118,72 +107,50 @@
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) CREATE STATS CHART
+     * 3) CREATE STATS CHART (HORIZONTAL BARS)
      *************************************************************/
-    new Chart(document.getElementById("statsCanvas").getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: statLabels,
-        datasets: [
-          { label: "Home", data: homeStats, backgroundColor: HOME_COLOR, borderRadius: 6 },
-          { label: "Away", data: awayStats, backgroundColor: AWAY_COLOR, borderRadius: 6 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        indexAxis: "y",
-        plugins: {
-          title: { display: true, text: "Stats", font: { family: "Inter", weight: "700", size: 16 } },
-          legend: { position: "top", labels: { font: { family: 'Inter', weight: '700' } } }
-        },
-        elements: { bar: { barPercentage: 0.7, categoryPercentage: 0.8 } },
-        scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
-      }
-    });
+    new ApexCharts(document.querySelector("#statsChart"), {
+      chart: { type: "bar", height: 500 },
+      series: [
+        { name: "Home", data: homeStats },
+        { name: "Away", data: awayStats }
+      ],
+      xaxis: { categories: statLabels },
+      colors: [HOME_COLOR, AWAY_COLOR],
+      plotOptions: { bar: { horizontal: true, barHeight: "60%" } },
+      title: { text: "Match Stats", align: "center", style: { fontSize: "16px" } },
+      legend: { position: "top" }
+    }).render();
 
     /*************************************************************
-     * 4) CREATE MOMENTUM CHART
+     * 4) CREATE MOMENTUM CHART (LINE GRAPH)
      *************************************************************/
-    new Chart(document.getElementById("momentumCanvas").getContext("2d"), {
-      type: "line",
-      data: {
-        labels: timeData,
-        datasets: [
-          { label: "Home Momentum", data: homeMomentumData, borderColor: HOME_COLOR, borderWidth: 3, radius: 0 },
-          { label: "Away Momentum", data: awayMomentumData, borderColor: AWAY_COLOR, borderWidth: 3, radius: 0 }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        scales: {
-          x: { type: "linear", title: { display: true, text: "Time (minutes)" } },
-          y: { min: 0, max: 1.2, title: { display: true, text: "Momentum" } }
-        },
-        plugins: { legend: { position: "top" } },
-        interaction: { mode: "index", intersect: false }
-      }
-    });
+    new ApexCharts(document.querySelector("#momentumChart"), {
+      chart: { type: "line", height: 400 },
+      series: [
+        { name: "Home Momentum", data: homeMomentumData },
+        { name: "Away Momentum", data: awayMomentumData }
+      ],
+      xaxis: { categories: timeData, title: { text: "Time (minutes)" } },
+      yaxis: { min: 0, max: 1.2, title: { text: "Momentum" } },
+      stroke: { width: 4 },
+      colors: [HOME_COLOR, AWAY_COLOR],
+      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px" } },
+      legend: { position: "top" }
+    }).render();
 
     /*************************************************************
-     * 5) CREATE POSSESSION CHART (DOUGHNUT STYLE)
+     * 5) CREATE POSSESSION CHART (DONUT STYLE)
      *************************************************************/
-    new Chart(document.getElementById("possessionCanvas").getContext("2d"), {
-      type: "doughnut",
-      data: {
-        labels: ["Home", "Away"],
-        datasets: [{ data: [possessionHome, possessionAway], backgroundColor: [HOME_COLOR, AWAY_COLOR] }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          title: { display: true, text: "Ball Possession", font: { family: "Inter", weight: "700", size: 16 } },
-          legend: { position: "bottom" }
-        }
-      }
-    });
+    new ApexCharts(document.querySelector("#possessionChart"), {
+      chart: { type: "donut", height: 350 },
+      series: [possessionHome, possessionAway],
+      labels: ["Home", "Away"],
+      colors: [HOME_COLOR, AWAY_COLOR],
+      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px" } },
+      legend: { position: "bottom" }
+    }).render();
   </script>
+
 </body>
 </html>
