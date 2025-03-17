@@ -142,4 +142,227 @@
               }
             }
           },
- 
+          elements: {
+            bar: {
+              // Smaller bars for possession
+              barPercentage: 0.25,
+              categoryPercentage: 0.5
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                font: { family: 'Inter', weight: '700' },
+                color: "#666"
+              },
+              grid: { display: true }
+            },
+            y: {
+              ticks: { display: false },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    })();
+
+    /*************************************************************
+     * 4) CREATE STATS CHART (Shots, etc.) with Bigger Bars
+     *************************************************************/
+    const statLabels = [
+      "Shots",
+      "Shots on Goal",
+      "Goal Chances",
+      "Duels Won",
+      "Saves",
+      "Corners",
+      "Fouls",
+      "Yellows",
+      "Reds"
+    ];
+
+    const homeVals = [
+      homeShots,
+      homeShotsOnGoal,
+      homeGoalChances,
+      homeDuelsWon,
+      homeSaves,
+      homeCorners,
+      homeFouls,
+      homeYellows,
+      homeReds
+    ];
+
+    const awayVals = [
+      awayShots,
+      awayShotsOnGoal,
+      awayGoalChances,
+      awayDuelsWon,
+      awaySaves,
+      awayCorners,
+      awayFouls,
+      awayYellows,
+      awayReds
+    ];
+
+    (function createStatsChart() {
+      new Chart(document.getElementById("statsChart").getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: statLabels,
+          datasets: [
+            {
+              label: "Home",
+              data: homeVals,
+              backgroundColor: HOME_COLOR,
+              borderRadius: 6
+            },
+            {
+              label: "Away",
+              data: awayVals,
+              backgroundColor: AWAY_COLOR,
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          indexAxis: "y",
+          plugins: {
+            title: {
+              display: true,
+              text: "Stats",  // "Stats" instead of "All Other Stats"
+              font: {
+                family: "Inter",
+                weight: "700",
+                size: 16
+              },
+              padding: { top: 10, bottom: 10 }
+            },
+            legend: {
+              display: true,
+              position: "top",
+              labels: {
+                font: { family: 'Inter', weight: '700' }
+              }
+            },
+            tooltip: {
+              titleFont: { family: 'Inter', weight: '700' },
+              bodyFont:  { family: 'Inter' },
+              callbacks: {
+                label: (ctx) => {
+                  const val = ctx.parsed.x || 0;
+                  const who = ctx.dataset.label || "";
+                  return `${who}: ${val}`;
+                }
+              }
+            }
+          },
+          elements: {
+            bar: {
+              // Larger bars, plus more spacing between categories
+              barPercentage: 0.7,
+              categoryPercentage: 0.8
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: {
+                font: { family: 'Inter', weight: '700' },
+                color: "#666"
+              },
+              grid: { display: true }
+            },
+            y: {
+              ticks: {
+                color: "#000",
+                font: { family: "Inter", weight: "700" }
+              },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    })();
+
+    /*************************************************************
+     * 5) MOMENTUM CHART
+     *************************************************************/
+    (function createMomentumChart() {
+      new Chart(document.getElementById("momentumChart").getContext("2d"), {
+        type: "line",
+        data: {
+          labels: timeData,
+          datasets: [
+            {
+              label: "Home Momentum",
+              data: homeMomentumData,
+              borderColor: HOME_COLOR,
+              borderWidth: 4, // line thickness
+              radius: 0
+            },
+            {
+              label: "Away Momentum",
+              data: awayMomentumData,
+              borderColor: AWAY_COLOR,
+              borderWidth: 4,
+              radius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            x: {
+              type: "linear",
+              title: {
+                display: true,
+                text: "Time (minutes)",
+                font: { family: "Inter", weight: "700" }
+              },
+              ticks: {
+                font: { family: "Inter", weight: "700" }
+              }
+            },
+            y: {
+              min: 0,
+              max: 1.2,
+              title: {
+                display: true,
+                text: "Momentum",
+                font: { family: "Inter", weight: "700" }
+              },
+              ticks: {
+                font: { family: "Inter", weight: "700" }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: "top",
+              labels: {
+                font: { family: "Inter", weight: "700" }
+              }
+            },
+            tooltip: {
+              mode: "index",
+              intersect: false,
+              titleFont: { family: "Inter", weight: "700" },
+              bodyFont:  { family: "Inter" }
+            }
+          },
+          interaction: {
+            mode: "index",
+            intersect: false
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
