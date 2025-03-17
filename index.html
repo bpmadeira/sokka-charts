@@ -29,11 +29,11 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
 
+    /* Fix Possession Chart */
     #possessionChart {
-      width: 70vw;
-      height: 100vh;
-      max-width: 350px;
-      aspect-ratio: 1/1; /* Keeps it circular */
+      width: 80vw;
+      max-width: 400px;
+      height: 400px !important;  /* FIXED HEIGHT TO PREVENT CLIPPING */
       margin: auto;
     }
   </style>
@@ -150,7 +150,7 @@
      * 5) CREATE POSSESSION CHART (DONUT STYLE)
      *************************************************************/
     new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: { type: "donut", height: 350 },
+      chart: { type: "donut", height: 400 },  // FIXED HEIGHT ADDED
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
