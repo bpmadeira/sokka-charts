@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Stacked Horizontal Bars at 100% + Momentum Lines</title>
+  <title>Stacked Horizontal Bars with Spacing + Momentum Chart</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,13 +13,9 @@
       padding: 20px;
       background: #f8f8f8;
       font-family: 'Inter', sans-serif;
-      text-align: center;  /* center the canvases horizontally */
+      text-align: center;
     }
-    /* 
-      We place each <canvas> directly in the <body>. 
-      Each canvas can be up to 90% viewport width, max 900px,
-      centered by margin: auto. No container div needed.
-    */
+    /* Each canvas is centered, up to 90% of viewport width, 900px max */
     canvas {
       display: inline-block;
       width: 90vw;
@@ -33,7 +29,7 @@
 </head>
 <body>
 
-  <!-- Stacked Horizontal 100%-Width Bars -->
+  <!-- Stacked Horizontal 100%-Bars -->
   <canvas id="statsChart"></canvas>
 
   <!-- Momentum Line Chart -->
@@ -43,15 +39,15 @@
     /*************************************************************
      * 1) GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048";  // Pinkish red
-    const AWAY_COLOR = "#2c2c2c";  // Dark gray
+    const HOME_COLOR = "#fa3048"; 
+    const AWAY_COLOR = "#2c2c2c";
 
     /*************************************************************
      * 2) PARSE URL PARAMS
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // A) Stats
+    // Stats
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -71,21 +67,18 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // e.g. 40 vs 60
-    const possessionHome    = Number(params.get("possessionHome")     || 0);
-    const possessionAway    = Number(params.get("possessionAway")     || 0);
+    const possessionHome    = Number(params.get("PossessionHome")     || 0);
+    const possessionAway    = Number(params.get("PossessionAway")     || 0);
 
-    // B) Momentum
+    // Momentum
     const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
     const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-
     const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
     const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
     const awayMomentumData  = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) BUILD DATA ARRAYS FOR HORIZONTAL 100% BARS
-     *    We'll scale each row so (Home + Away) = 100.
+     * 3) BUILD DATA ARRAYS, SCALE TO 100% FOR EACH STAT
      *************************************************************/
     const statLabels = [
       "Ball Possession",
@@ -99,7 +92,7 @@
       "Yellows",
       "Reds"
     ];
-    const rawHomeValues = [
+    const rawHomeVals = [
       possessionHome,
       homeShots,
       homeShotsOnGoal,
@@ -111,7 +104,7 @@
       homeYellows,
       homeReds
     ];
-    const rawAwayValues = [
+    const rawAwayVals = [
       possessionAway,
       awayShots,
       awayShotsOnGoal,
@@ -124,12 +117,11 @@
       awayReds
     ];
 
-    // Convert each row to a total of 100
     const homePerc = [];
     const awayPerc = [];
-    for (let i = 0; i < statLabels.length; i++) {
-      const h = rawHomeValues[i];
-      const a = rawAwayValues[i];
+    statLabels.forEach((label, i) => {
+      const h = rawHomeVals[i];
+      const a = rawAwayVals[i];
       const sum = h + a;
       if (sum === 0) {
         homePerc.push(0);
@@ -138,63 +130,57 @@
         homePerc.push((h / sum) * 100);
         awayPerc.push((a / sum) * 100);
       }
-    }
+    });
 
     /*************************************************************
-     * 4) CUSTOM PLUGIN: PLACE LABEL ON TOP OF EACH ROW
+     * 4) PLUGIN: LABEL ABOVE EACH ROW
      *************************************************************/
     const topLabelPlugin = {
       id: 'topLabelPlugin',
       afterDatasetsDraw(chart) {
         const { ctx, data, chartArea, scales } = chart;
-        // indexAxis: 'y' means each label is a horizontal row
-        // We'll place the label above each row.
         data.labels.forEach((label, i) => {
-          // The y position for row i
-          // scale 'y' because indexAxis: 'y'
-          const yPos = scales.y.getPixelForValue(i);
-          // The bar height is the distance between row i and row i+1
-          let nextPos = scales.y.getPixelForValue(i + 1) || yPos + 30; 
-          const half = (yPos + nextPos) / 2; // vertical center of row
-          // We'll place text slightly above center (like a title)
-          const textY = half - 10;
+          // find the row's vertical center
+          const yPos = scales.y.getPixelForValue(i); 
+          let nextPos = scales.y.getPixelForValue(i+1) || (yPos + 20);
+          const centerY = (yPos + nextPos)/2;
+          const labelY = centerY - 10;
 
           ctx.save();
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
           ctx.fillStyle = '#000';
           ctx.font = '700 14px Inter';
-          ctx.fillText(label, chartArea.width / 2, textY);
+          ctx.fillText(label, chartArea.width/2, labelY);
           ctx.restore();
         });
       }
     };
 
     /*************************************************************
-     * 5) BUILD THE STATS CHART CONFIG (STACKED HORIZONTAL BARS)
+     * 5) STATS CHART (STACKED HORIZONTAL, EXTRA SPACE)
      *************************************************************/
     let delayed = false;
-    const statsChartConfig = {
+    new Chart(document.getElementById("statsChart"), {
       type: 'bar',
       data: {
         labels: statLabels,
         datasets: [
-          {
-            label: "Home",
-            data: homePerc,
-            backgroundColor: HOME_COLOR
-          },
-          {
-            label: "Away",
-            data: awayPerc,
-            backgroundColor: AWAY_COLOR
-          }
+          { label: "Home", data: homePerc, backgroundColor: HOME_COLOR },
+          { label: "Away", data: awayPerc, backgroundColor: AWAY_COLOR }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        indexAxis: 'y',     // horizontal bars
+        indexAxis: 'y',
+        elements: {
+          bar: {
+            // Control space between bars
+            barPercentage: 0.7,      // width of the bar itself
+            categoryPercentage: 0.6  // space between categories
+          }
+        },
         animation: {
           onComplete: () => { delayed = true; },
           delay: (ctx) => {
@@ -208,19 +194,17 @@
         scales: {
           x: {
             min: 0,
-            max: 100, // each row sums to 100
+            max: 100,
             ticks: { display: false },
             grid: { display: false }
           },
           y: {
-            // hide these so we only see bars
             ticks: { display: false },
             grid: { display: false }
           }
         },
         plugins: {
           legend: {
-            display: true,
             position: 'top',
             labels: {
               font: {
@@ -239,7 +223,6 @@
             },
             callbacks: {
               label: (context) => {
-                // e.g., "Home: 45%"
                 const label = context.dataset.label || "";
                 const val   = context.parsed.x || 0;
                 return `${label}: ${val.toFixed(1)}%`;
@@ -249,14 +232,12 @@
         }
       },
       plugins: [ topLabelPlugin ]
-    };
-    // Build the stats chart
-    new Chart(document.getElementById("statsChart"), statsChartConfig);
+    });
 
     /*************************************************************
-     * 6) MOMENTUM LINE CHART: triple thickness, y up to 1.2
+     * 6) MOMENTUM CHART (TRIPLE-THICK LINES, Y up to 1.2)
      *************************************************************/
-    const momentumChartConfig = {
+    new Chart(document.getElementById("momentumChart"), {
       type: 'line',
       data: {
         labels: timeData,
@@ -265,7 +246,7 @@
             label: "Home Momentum",
             data: homeMomentumData,
             borderColor: HOME_COLOR,
-            borderWidth: 6, // triple thick
+            borderWidth: 6,
             radius: 0
           },
           {
@@ -286,34 +267,22 @@
             title: {
               display: true,
               text: "Time (minutes)",
-              font: {
-                family: 'Inter',
-                weight: '700'
-              }
+              font: { family: 'Inter', weight: '700' }
             },
             ticks: {
-              font: {
-                family: 'Inter',
-                weight: '700'
-              }
+              font: { family: 'Inter', weight: '700' }
             }
           },
           y: {
             min: 0,
-            max: 1.2, // extra space above 1
+            max: 1.2, // extra space
             title: {
               display: true,
               text: "Momentum",
-              font: {
-                family: 'Inter',
-                weight: '700'
-              }
+              font: { family: 'Inter', weight: '700' }
             },
             ticks: {
-              font: {
-                family: 'Inter',
-                weight: '700'
-              }
+              font: { family: 'Inter', weight: '700' }
             }
           }
         },
@@ -331,13 +300,8 @@
           tooltip: {
             mode: 'index',
             intersect: false,
-            titleFont: {
-              family: 'Inter',
-              weight: '700'
-            },
-            bodyFont: {
-              family: 'Inter'
-            }
+            titleFont: { family: 'Inter', weight: '700' },
+            bodyFont:  { family: 'Inter' }
           }
         },
         interaction: {
@@ -345,9 +309,7 @@
           intersect: false
         }
       }
-    };
-    // Build momentum chart
-    new Chart(document.getElementById("momentumChart"), momentumChartConfig);
+    });
   </script>
 </body>
 </html>
