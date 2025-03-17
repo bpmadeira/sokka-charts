@@ -9,36 +9,37 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
-    html, body {
-      overflow: hidden; /* Hides scrollbars */
-      height: 120vh; /* Ensures full viewport height */
-      margin: 0;
-      padding: 0;
-      font-family: "Inter", sans-serif;
-      background: #f8f8f8;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+    hhtml, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden; /* Avoid unnecessary scrollbars */
+    font-family: "Inter", sans-serif;
+    background: #f8f8f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  /* General Chart Container */
+  .chart-container {
+    width: 90vw; /* Full width on mobile, limited on desktop */
+    max-width: 900px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 2vh;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Individual Chart Heights (Flexible) */
+  #statsChart { height: 40vh; min-height: 350px; }  /* Stats Chart - largest */
+  #momentumChart { height: 35vh; min-height: 300px; }  /* Medium size */
+  #possessionChart { height: 30vh; width: 80vw; max-width: 400px; min-height: 280px; }  /* Smallest */
 
-    .chart-container {
-      width: 90vw;
-      max-width: 900px;
-      margin: 1vh auto;
-      background: #fff;
-      border-radius: 8px;
-      padding: 2vh;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    /* Responsive Heights */
-    #statsChart { height: 40vh; } /* Largest */
-    #momentumChart { height: 30vh; } /* Medium */
-    #possessionChart { height: 30vh; width: 80vw; max-width: 900px; } /* Smallest */
   </style>
 </head>
 <body>
