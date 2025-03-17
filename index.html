@@ -2,23 +2,25 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Ball Possession (Smaller Bars), Stats (Bigger Bars) + Momentum</title>
+  <title>Stats + Momentum + Possession Doughnut</title>
+  <!-- Chart.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
     body {
       margin: 0;
       padding: 20px;
       background: #f8f8f8;
-      font-family: "Inter", sans-serif;
-      text-align: center; /* center the canvases horizontally */
+      font-family: 'Inter', sans-serif;
+      text-align: center; /* center canvases horizontally */
     }
-
     /*
-      Each canvas can be up to 90% viewport width and 900px max.
-      We rely on Chart.js's maintainAspectRatio for a 2:1 ratio (unless changed).
+      Each canvas can be up to 90% viewport width, 900px max, 
+      with no fixed CSS height => Chart.js uses aspect ratio.
     */
     canvas {
       display: inline-block;
@@ -33,32 +35,28 @@
 </head>
 <body>
 
-  <!-- Possession Chart (one row, smaller bars) -->
-  <canvas id="possessionChart"></canvas>
-
-  <!-- Single chart for all other stats, bigger bars -->
+  <!-- 1) Stats Chart (horizontal bars) -->
   <canvas id="statsChart"></canvas>
 
-  <!-- Momentum Line Chart -->
+  <!-- 2) Momentum Chart (line) -->
   <canvas id="momentumChart"></canvas>
+
+  <!-- 3) Possession Doughnut (radial) -->
+  <canvas id="possessionChart"></canvas>
 
   <script>
     /*************************************************************
      * 1) GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048"; // Home color
-    const AWAY_COLOR = "#2c2c2c"; // Away color
+    const HOME_COLOR = "#fa3048";
+    const AWAY_COLOR = "#2c2c2c";
 
     /*************************************************************
      * 2) PARSE URL PARAMS
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // Ball Possession
-    const possessionHome = Number(params.get("possessionHome") || 0);
-    const possessionAway = Number(params.get("possessionAway") || 0);
-
-    // Other Stats
+    // Stats
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -79,135 +77,57 @@
     const awayReds          = Number(params.get("away_reds")          || 0);
 
     // Momentum
-    const rawTimeTracker = params.get("time_tracker")    || "0,15,30,45,60,75,90";
-    const rawMomentum    = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData       = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
-    const awayMomentumData = homeMomentumData.map(v => 1 - v);
+    const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
+    const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
+
+    // Possession
+    const possessionHome    = Number(params.get("possessionHome") || 0);
+    const possessionAway    = Number(params.get("possessionAway") || 0);
 
     /*************************************************************
-     * 3) CREATE POSSESSION CHART (Smaller bars)
+     * 3) STATS CHART (Shots, Shots on Goal, etc.)
      *************************************************************/
-    (function createPossessionChart() {
-      new Chart(document.getElementById("possessionChart").getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: ["Ball Possession"],
-          datasets: [
-            {
-              label: "Home",
-              data: [possessionHome],
-              backgroundColor: HOME_COLOR,
-              borderRadius: 6
-            },
-            {
-              label: "Away",
-              data: [possessionAway],
-              backgroundColor: AWAY_COLOR,
-              borderRadius: 6
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          indexAxis: "y",
-          plugins: {
-            title: {
-              display: true,
-              text: "Ball Possession",
-              font: {
-                family: "Inter",
-                weight: "700",
-                size: 16
-              },
-              padding: { top: 10, bottom: 10 }
-            },
-            legend: {
-              display: true,
-              position: "top",
-              labels: {
-                font: { family: 'Inter', weight: '700' }
-              }
-            },
-            tooltip: {
-              titleFont: { family: 'Inter', weight: '700' },
-              bodyFont:  { family: 'Inter' },
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.parsed.x || 0;
-                  const who = ctx.dataset.label || "";
-                  return `${who}: ${val}`;
-                }
-              }
-            }
-          },
-          elements: {
-            bar: {
-              // Slightly smaller bars for possession
-              barPercentage: 0.2,
-              categoryPercentage: 0.5
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                font: { family: 'Inter', weight: '700' },
-                color: "#666"
-              },
-              grid: { display: true }
-            },
-            y: {
-              ticks: { display: false },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    })();
-
-    /*************************************************************
-     * 4) CREATE SINGLE STATS CHART (Bigger Bars + More Spacing)
-     *************************************************************/
-    const statLabels = [
-      "Shots",
-      "Shots on Goal",
-      "Goal Chances",
-      "Duels Won",
-      "Saves",
-      "Corners",
-      "Fouls",
-      "Yellows",
-      "Reds"
-    ];
-
-    const homeVals = [
-      homeShots,
-      homeShotsOnGoal,
-      homeGoalChances,
-      homeDuelsWon,
-      homeSaves,
-      homeCorners,
-      homeFouls,
-      homeYellows,
-      homeReds
-    ];
-
-    const awayVals = [
-      awayShots,
-      awayShotsOnGoal,
-      awayGoalChances,
-      awayDuelsWon,
-      awaySaves,
-      awayCorners,
-      awayFouls,
-      awayYellows,
-      awayReds
-    ];
-
     (function createStatsChart() {
-      new Chart(document.getElementById("statsChart").getContext("2d"), {
+      const statLabels = [
+        "Shots",
+        "Shots on Goal",
+        "Goal Chances",
+        "Duels Won",
+        "Saves",
+        "Corners",
+        "Fouls",
+        "Yellows",
+        "Reds"
+      ];
+
+      const homeVals = [
+        homeShots,
+        homeShotsOnGoal,
+        homeGoalChances,
+        homeDuelsWon,
+        homeSaves,
+        homeCorners,
+        homeFouls,
+        homeYellows,
+        homeReds
+      ];
+
+      const awayVals = [
+        awayShots,
+        awayShotsOnGoal,
+        awayGoalChances,
+        awayDuelsWon,
+        awaySaves,
+        awayCorners,
+        awayFouls,
+        awayYellows,
+        awayReds
+      ];
+
+      new Chart(document.getElementById("statsChart"), {
         type: "bar",
         data: {
           labels: statLabels,
@@ -229,16 +149,12 @@
         options: {
           responsive: true,
           maintainAspectRatio: true,
-          indexAxis: "y",
+          indexAxis: 'y',
           plugins: {
             title: {
               display: true,
               text: "Stats",
-              font: {
-                family: "Inter",
-                weight: "700",
-                size: 16
-              },
+              font: { family: "Inter", weight: "700", size: 16 },
               padding: { top: 10, bottom: 10 }
             },
             legend: {
@@ -262,13 +178,8 @@
           },
           elements: {
             bar: {
-              /*
-                barPercentage: how thick each bar is.
-                categoryPercentage: spacing between rows.
-                Increase these for bigger bars & more row spacing.
-              */
-              barPercentage: 0.8,
-              categoryPercentage: 0.9
+              barPercentage: 0.7,
+              categoryPercentage: 0.8
             }
           },
           scales: {
@@ -293,10 +204,10 @@
     })();
 
     /*************************************************************
-     * 5) MOMENTUM CHART
+     * 4) MOMENTUM LINE CHART
      *************************************************************/
     (function createMomentumChart() {
-      new Chart(document.getElementById("momentumChart").getContext("2d"), {
+      new Chart(document.getElementById("momentumChart"), {
         type: "line",
         data: {
           labels: timeData,
@@ -305,7 +216,7 @@
               label: "Home Momentum",
               data: homeMomentumData,
               borderColor: HOME_COLOR,
-              borderWidth: 4, // line thickness
+              borderWidth: 4,
               radius: 0
             },
             {
@@ -364,6 +275,58 @@
             mode: "index",
             intersect: false
           }
+        }
+      });
+    })();
+
+    /*************************************************************
+     * 5) DOUGHNUT CHART FOR BALL POSSESSION
+     *************************************************************/
+    (function createPossessionChart() {
+      new Chart(document.getElementById("possessionChart"), {
+        type: "doughnut",
+        data: {
+          labels: ["Home Possession", "Away Possession"],
+          datasets: [{
+            label: "Ball Possession",
+            data: [possessionHome, possessionAway],
+            backgroundColor: [HOME_COLOR, AWAY_COLOR],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: {
+              display: true,
+              text: "Ball Possession",
+              font: { family: "Inter", weight: "700", size: 16 },
+              padding: { top: 10, bottom: 10 }
+            },
+            legend: {
+              position: "top",
+              labels: {
+                font: { family: 'Inter', weight: '700' }
+              }
+            },
+            tooltip: {
+              titleFont: { family: 'Inter', weight: '700' },
+              bodyFont:  { family: 'Inter' },
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || "";
+                  const val   = context.parsed || 0;
+                  return `${label}: ${val}`;
+                }
+              }
+            }
+          },
+          /*
+            Make the doughnut a bit narrower if you like, 
+            e.g. cutout: "50%" for a ring shape
+          */
+          cutout: "50%" 
         }
       });
     })();
