@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Possession (small), Stats (big), Momentum (small)</title>
+  <title>Match Stats & Momentum</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,62 +14,62 @@
       padding: 20px;
       background: #f8f8f8;
       font-family: "Inter", sans-serif;
-      text-align: center; /* center all canvases horizontally */
+      text-align: center;
     }
 
-    /* 1) Possession Chart: smaller height */
-    #possessionCanvas {
-      display: block;
-      width: 90vw;
-      max-width: 900px;
-      height: 300px;           /* smaller height */
-      margin: 20px auto;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-
-    /* 2) Stats Chart: bigger height (9 bars). */
+    /* 1) Stats Chart: largest */
     #statsCanvas {
       display: block;
       width: 90vw;
       max-width: 900px;
-      height: 600px;           /* bigger for multiple bars */
+      height: 600px; /* Bigger for multiple bars */
       margin: 20px auto;
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
 
-    /* 3) Momentum Chart: smaller again */
+    /* 2) Momentum Chart */
     #momentumCanvas {
       display: block;
       width: 90vw;
       max-width: 900px;
-      height: 300px;           /* smaller */
+      height: 300px; /* Medium size */
       margin: 20px auto;
       background: #fff;
       border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 3) Possession Chart: Smallest */
+    #possessionCanvas {
+      display: block;
+      width: 60vw;
+      max-width: 400px; /* Smallest size */
+      height: auto; /* Auto height for radial */
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 50%;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
   </style>
 </head>
 <body>
 
-  <!-- 1) Possession Chart (smaller) -->
-  <canvas id="possessionCanvas"></canvas>
-
-  <!-- 2) Stats Chart (bigger) -->
+  <!-- 1) Stats Chart -->
   <canvas id="statsCanvas"></canvas>
 
-  <!-- 3) Momentum Chart (smaller) -->
+  <!-- 2) Momentum Chart -->
   <canvas id="momentumCanvas"></canvas>
+
+  <!-- 3) Possession Chart (Doughnut) -->
+  <canvas id="possessionCanvas"></canvas>
 
   <script>
     /*************************************************************
-     * 1) DEFINE GLOBAL COLORS
+     * 1) GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048"; // Red-ish for Home
+    const HOME_COLOR = "#fa3048"; // Red for Home
     const AWAY_COLOR = "#2c2c2c"; // Dark Gray for Away
 
     /*************************************************************
@@ -78,301 +78,113 @@
     const params = new URLSearchParams(window.location.search);
 
     // Possession
-    const possessionHome = Number(params.get("possessionHome") || 0);
-    const possessionAway = Number(params.get("possessionAway") || 0);
+    const possessionHome = Number(params.get("possessionHome") || 50);
+    const possessionAway = Number(params.get("possessionAway") || 50);
 
     // Stats (Shots, Fouls, etc.)
-    const homeShots         = Number(params.get("home_shots")         || 0);
-    const awayShots         = Number(params.get("away_shots")         || 0);
-    const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
-    const awayShotsOnGoal   = Number(params.get("away_shots_on_goal") || 0);
-    const homeGoalChances   = Number(params.get("home_goal_chances")  || 0);
-    const awayGoalChances   = Number(params.get("away_goal_chances")  || 0);
-    const homeDuelsWon      = Number(params.get("home_duels_won")     || 0);
-    const awayDuelsWon      = Number(params.get("away_duels_won")     || 0);
-    const homeSaves         = Number(params.get("home_saves")         || 0);
-    const awaySaves         = Number(params.get("away_saves")         || 0);
-    const homeCorners       = Number(params.get("home_corners")       || 0);
-    const awayCorners       = Number(params.get("away_corners")       || 0);
-    const homeFouls         = Number(params.get("home_fouls")         || 0);
-    const awayFouls         = Number(params.get("away_fouls")         || 0);
-    const homeYellows       = Number(params.get("home_yellows")       || 0);
-    const awayYellows       = Number(params.get("away_yellows")       || 0);
-    const homeReds          = Number(params.get("home_reds")          || 0);
-    const awayReds          = Number(params.get("away_reds")          || 0);
+    const homeStats = [
+      Number(params.get("home_shots") || 0),
+      Number(params.get("home_shots_on_goal") || 0),
+      Number(params.get("home_goal_chances") || 0),
+      Number(params.get("home_duels_won") || 0),
+      Number(params.get("home_saves") || 0),
+      Number(params.get("home_corners") || 0),
+      Number(params.get("home_fouls") || 0),
+      Number(params.get("home_yellows") || 0),
+      Number(params.get("home_reds") || 0)
+    ];
+
+    const awayStats = [
+      Number(params.get("away_shots") || 0),
+      Number(params.get("away_shots_on_goal") || 0),
+      Number(params.get("away_goal_chances") || 0),
+      Number(params.get("away_duels_won") || 0),
+      Number(params.get("away_saves") || 0),
+      Number(params.get("away_corners") || 0),
+      Number(params.get("away_fouls") || 0),
+      Number(params.get("away_yellows") || 0),
+      Number(params.get("away_reds") || 0)
+    ];
+
+    const statLabels = [
+      "Shots", "Shots on Goal", "Goal Chances", "Duels Won",
+      "Saves", "Corners", "Fouls", "Yellows", "Reds"
+    ];
 
     // Momentum
-    const rawTimeTracker = params.get("time_tracker")    || "0,15,30,45,60,75,90";
-    const rawMomentum    = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData       = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const rawTimeTracker = params.get("time_tracker") || "0,15,30,45,60,75,90";
+    const rawMomentum = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const timeData = rawTimeTracker.split(",").map(x => Number(x.trim()));
     const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) CREATE THE POSSESSION CHART (SMALLER)
+     * 3) CREATE STATS CHART
      *************************************************************/
-    (function () {
-      const ctx = document.getElementById("possessionCanvas").getContext("2d");
-      new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: ["Ball Possession"],  // single row
-          datasets: [
-            {
-              label: "Home",
-              data: [possessionHome],
-              backgroundColor: HOME_COLOR,
-              borderRadius: 6
-            },
-            {
-              label: "Away",
-              data: [possessionAway],
-              backgroundColor: AWAY_COLOR,
-              borderRadius: 6
-            }
-          ]
+    new Chart(document.getElementById("statsCanvas").getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: statLabels,
+        datasets: [
+          { label: "Home", data: homeStats, backgroundColor: HOME_COLOR, borderRadius: 6 },
+          { label: "Away", data: awayStats, backgroundColor: AWAY_COLOR, borderRadius: 6 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        plugins: {
+          title: { display: true, text: "Stats", font: { family: "Inter", weight: "700", size: 16 } },
+          legend: { position: "top", labels: { font: { family: 'Inter', weight: '700' } } }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false, // so it respects the 300px height
-          indexAxis: "y",
-          plugins: {
-            title: {
-              display: true,
-              text: "Ball Possession",
-              font: { family: "Inter", weight: "700", size: 16 },
-              padding: { top: 10, bottom: 10 }
-            },
-            legend: {
-              display: true,
-              position: "top",
-              labels: { font: { family: 'Inter', weight: '700' } }
-            },
-            tooltip: {
-              titleFont: { family: 'Inter', weight: '700' },
-              bodyFont:  { family: 'Inter' },
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.parsed.x || 0;
-                  const who = ctx.dataset.label || "";
-                  return `${who}: ${val}`;
-                }
-              }
-            }
-          },
-          elements: {
-            bar: {
-              barPercentage: 0.3,      // smaller bars
-              categoryPercentage: 0.6
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                font: { family: 'Inter', weight: '700' },
-                color: "#666"
-              },
-              grid: { display: true }
-            },
-            y: {
-              ticks: { display: false },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    })();
+        elements: { bar: { barPercentage: 0.7, categoryPercentage: 0.8 } },
+        scales: { x: { beginAtZero: true }, y: { grid: { display: false } } }
+      }
+    });
 
     /*************************************************************
-     * 4) CREATE THE STATS CHART (BIGGER, 9 bars)
+     * 4) CREATE MOMENTUM CHART
      *************************************************************/
-    (function () {
-      const statLabels = [
-        "Shots",
-        "Shots on Goal",
-        "Goal Chances",
-        "Duels Won",
-        "Saves",
-        "Corners",
-        "Fouls",
-        "Yellows",
-        "Reds"
-      ];
-
-      const homeVals = [
-        homeShots,
-        homeShotsOnGoal,
-        homeGoalChances,
-        homeDuelsWon,
-        homeSaves,
-        homeCorners,
-        homeFouls,
-        homeYellows,
-        homeReds
-      ];
-
-      const awayVals = [
-        awayShots,
-        awayShotsOnGoal,
-        awayGoalChances,
-        awayDuelsWon,
-        awaySaves,
-        awayCorners,
-        awayFouls,
-        awayYellows,
-        awayReds
-      ];
-
-      const ctx = document.getElementById("statsCanvas").getContext("2d");
-      new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: statLabels,
-          datasets: [
-            {
-              label: "Home",
-              data: homeVals,
-              backgroundColor: HOME_COLOR,
-              borderRadius: 6
-            },
-            {
-              label: "Away",
-              data: awayVals,
-              backgroundColor: AWAY_COLOR,
-              borderRadius: 6
-            }
-          ]
+    new Chart(document.getElementById("momentumCanvas").getContext("2d"), {
+      type: "line",
+      data: {
+        labels: timeData,
+        datasets: [
+          { label: "Home Momentum", data: homeMomentumData, borderColor: HOME_COLOR, borderWidth: 3, radius: 0 },
+          { label: "Away Momentum", data: awayMomentumData, borderColor: AWAY_COLOR, borderWidth: 3, radius: 0 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { type: "linear", title: { display: true, text: "Time (minutes)" } },
+          y: { min: 0, max: 1.2, title: { display: true, text: "Momentum" } }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false, // so it respects the 600px height
-          indexAxis: "y",
-          plugins: {
-            title: {
-              display: true,
-              text: "Stats",
-              font: { family: "Inter", weight: "700", size: 16 },
-              padding: { top: 10, bottom: 10 }
-            },
-            legend: {
-              display: true,
-              position: "top",
-              labels: { font: { family: 'Inter', weight: '700' } }
-            },
-            tooltip: {
-              titleFont: { family: 'Inter', weight: '700' },
-              bodyFont:  { family: 'Inter' },
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.parsed.x || 0;
-                  const who = ctx.dataset.label || "";
-                  return `${who}: ${val}`;
-                }
-              }
-            }
-          },
-          elements: {
-            bar: {
-              barPercentage: 0.7,   // bigger bars
-              categoryPercentage: 0.8
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                font: { family: 'Inter', weight: '700' },
-                color: "#666"
-              },
-              grid: { display: true }
-            },
-            y: {
-              ticks: {
-                color: "#000",
-                font: { family: "Inter", weight: "700" }
-              },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    })();
+        plugins: { legend: { position: "top" } },
+        interaction: { mode: "index", intersect: false }
+      }
+    });
 
     /*************************************************************
-     * 5) CREATE THE MOMENTUM CHART (SMALLER)
+     * 5) CREATE POSSESSION CHART (DOUGHNUT STYLE)
      *************************************************************/
-    (function () {
-      const ctx = document.getElementById("momentumCanvas").getContext("2d");
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: timeData,
-          datasets: [
-            {
-              label: "Home Momentum",
-              data: homeMomentumData,
-              borderColor: HOME_COLOR,
-              borderWidth: 4,
-              radius: 0
-            },
-            {
-              label: "Away Momentum",
-              data: awayMomentumData,
-              borderColor: AWAY_COLOR,
-              borderWidth: 4,
-              radius: 0
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false, // so it respects the 300px height
-          scales: {
-            x: {
-              type: "linear",
-              title: {
-                display: true,
-                text: "Time (minutes)",
-                font: { family: "Inter", weight: "700" }
-              },
-              ticks: {
-                font: { family: "Inter", weight: "700" }
-              }
-            },
-            y: {
-              min: 0,
-              max: 1.2,
-              title: {
-                display: true,
-                text: "Momentum",
-                font: { family: "Inter", weight: "700" }
-              },
-              ticks: {
-                font: { family: "Inter", weight: "700" }
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: "top",
-              labels: { font: { family: "Inter", weight: "700" } }
-            },
-            tooltip: {
-              mode: "index",
-              intersect: false,
-              titleFont: { family: "Inter", weight: "700" },
-              bodyFont:  { family: "Inter" }
-            }
-          },
-          interaction: {
-            mode: "index",
-            intersect: false
-          }
+    new Chart(document.getElementById("possessionCanvas").getContext("2d"), {
+      type: "doughnut",
+      data: {
+        labels: ["Home", "Away"],
+        datasets: [{ data: [possessionHome, possessionAway], backgroundColor: [HOME_COLOR, AWAY_COLOR] }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: { display: true, text: "Ball Possession", font: { family: "Inter", weight: "700", size: 16 } },
+          legend: { position: "bottom" }
         }
-      });
-    })();
+      }
+    });
   </script>
 </body>
 </html>
