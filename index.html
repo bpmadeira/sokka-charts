@@ -33,6 +33,7 @@
       width: 60vw;
       max-width: 350px;
       aspect-ratio: 1/1; /* Keeps it circular */
+      margin: auto;
     }
   </style>
 </head>
@@ -118,7 +119,7 @@
       xaxis: { categories: statLabels },
       colors: [HOME_COLOR, AWAY_COLOR],
       plotOptions: { bar: { horizontal: true, barHeight: "60%" } },
-      title: { text: "Match Stats", align: "center", style: { fontSize: "16px" } },
+      title: { text: "Match Stats", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
       legend: { position: "top" }
     }).render();
 
@@ -131,11 +132,16 @@
         { name: "Home Momentum", data: homeMomentumData },
         { name: "Away Momentum", data: awayMomentumData }
       ],
-      xaxis: { categories: timeData, title: { text: "Time (minutes)" } },
-      yaxis: { min: 0, max: 1.2, title: { text: "Momentum" } },
+      xaxis: { categories: timeData, title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } } },
+      yaxis: {
+        min: 0, max: 1,
+        tickAmount: 2,  // Forces labels to 0, 0.5, 1
+        labels: { formatter: (val) => val.toFixed(1), style: { fontFamily: "Inter", fontWeight: "700" } },
+        title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
+      },
       stroke: { width: 4 },
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px" } },
+      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
       legend: { position: "top" }
     }).render();
 
@@ -147,7 +153,7 @@
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px" } },
+      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
       legend: { position: "bottom" }
     }).render();
   </script>
