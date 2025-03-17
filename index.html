@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Separate Ball Possession (Smaller Bars) & Other Stats (Bigger Bars) + Momentum</title>
+  <title>Separate Ball Possession (Smaller Bars) & Stats (Bigger Bars) + Momentum</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,8 +17,8 @@
     }
 
     /*
-      Each chart is up to 90% viewport width, 900px max,
-      with no fixed height => Chart.js default ratio (2:1).
+      Each canvas is up to 90% viewport width, 900px max.
+      No fixed height => Chart.js uses its default ratio (2:1).
     */
     canvas {
       display: inline-block;
@@ -36,10 +36,10 @@
   <!-- Possession Chart (one row, smaller bars) -->
   <canvas id="possessionChart"></canvas>
 
-  <!-- Other Stats Chart (multiple rows, slightly bigger bars) -->
+  <!-- Single chart for all other stats, bigger bars -->
   <canvas id="statsChart"></canvas>
 
-  <!-- Momentum Line Chart -->
+  <!-- Momentum Chart -->
   <canvas id="momentumChart"></canvas>
 
   <script>
@@ -86,7 +86,7 @@
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) CREATE POSSESSION CHART (one row, smaller bars)
+     * 3) CREATE POSSESSION CHART (Small Bars)
      *************************************************************/
     (function createPossessionChart() {
       new Chart(document.getElementById("possessionChart").getContext("2d"), {
@@ -142,226 +142,4 @@
               }
             }
           },
-          elements: {
-            bar: {
-              barPercentage: 0.3,    // smaller bars
-              categoryPercentage: 0.5
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                font: { family: 'Inter', weight: '700' },
-                color: "#666"
-              },
-              grid: { display: true }
-            },
-            y: {
-              ticks: { display: false },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    })();
-
-    /*************************************************************
-     * 4) CREATE OTHER STATS CHART (Shots, Shots on Goal, etc.)
-     *    Slightly bigger bars
-     *************************************************************/
-    const otherStatLabels = [
-      "Shots",
-      "Shots on Goal",
-      "Goal Chances",
-      "Duels Won",
-      "Saves",
-      "Corners",
-      "Fouls",
-      "Yellows",
-      "Reds"
-    ];
-
-    const homeVals = [
-      homeShots,
-      homeShotsOnGoal,
-      homeGoalChances,
-      homeDuelsWon,
-      homeSaves,
-      homeCorners,
-      homeFouls,
-      homeYellows,
-      homeReds
-    ];
-
-    const awayVals = [
-      awayShots,
-      awayShotsOnGoal,
-      awayGoalChances,
-      awayDuelsWon,
-      awaySaves,
-      awayCorners,
-      awayFouls,
-      awayYellows,
-      awayReds
-    ];
-
-    (function createOtherStatsChart() {
-      new Chart(document.getElementById("statsChart").getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: otherStatLabels,
-          datasets: [
-            {
-              label: "Home",
-              data: homeVals,
-              backgroundColor: HOME_COLOR,
-              borderRadius: 6
-            },
-            {
-              label: "Away",
-              data: awayVals,
-              backgroundColor: AWAY_COLOR,
-              borderRadius: 6
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          indexAxis: "y",
-          plugins: {
-            title: {
-              display: true,
-              text: "All Other Stats",
-              font: {
-                family: "Inter",
-                weight: "700",
-                size: 16
-              },
-              padding: { top: 10, bottom: 10 }
-            },
-            legend: {
-              display: true,
-              position: "top",
-              labels: {
-                font: { family: 'Inter', weight: '700' }
-              }
-            },
-            tooltip: {
-              titleFont: { family: 'Inter', weight: '700' },
-              bodyFont:  { family: 'Inter' },
-              callbacks: {
-                label: (ctx) => {
-                  const val = ctx.parsed.x || 0;
-                  const who = ctx.dataset.label || "";
-                  return `${who}: ${val}`;
-                }
-              }
-            }
-          },
-          elements: {
-            bar: {
-              barPercentage: 0.6,    // slightly bigger than possession
-              categoryPercentage: 0.7
-            }
-          },
-          scales: {
-            x: {
-              beginAtZero: true,
-              ticks: {
-                font: { family: 'Inter', weight: '700' },
-                color: "#666"
-              },
-              grid: { display: true }
-            },
-            y: {
-              ticks: {
-                color: "#000",
-                font: { family: "Inter", weight: "700" }
-              },
-              grid: { display: false }
-            }
-          }
-        }
-      });
-    })();
-
-    /*************************************************************
-     * 5) MOMENTUM CHART
-     *************************************************************/
-    (function createMomentumChart() {
-      new Chart(document.getElementById("momentumChart").getContext("2d"), {
-        type: "line",
-        data: {
-          labels: timeData,
-          datasets: [
-            {
-              label: "Home Momentum",
-              data: homeMomentumData,
-              borderColor: HOME_COLOR,
-              borderWidth: 4, // line thickness
-              radius: 0
-            },
-            {
-              label: "Away Momentum",
-              data: awayMomentumData,
-              borderColor: AWAY_COLOR,
-              borderWidth: 4,
-              radius: 0
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          scales: {
-            x: {
-              type: "linear",
-              title: {
-                display: true,
-                text: "Time (minutes)",
-                font: { family: "Inter", weight: "700" }
-              },
-              ticks: {
-                font: { family: "Inter", weight: "700" }
-              }
-            },
-            y: {
-              min: 0,
-              max: 1.2,
-              title: {
-                display: true,
-                text: "Momentum",
-                font: { family: "Inter", weight: "700" }
-              },
-              ticks: {
-                font: { family: "Inter", weight: "700" }
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: "top",
-              labels: {
-                font: { family: "Inter", weight: "700" }
-              }
-            },
-            tooltip: {
-              mode: "index",
-              intersect: false,
-              titleFont: { family: "Inter", weight: "700" },
-              bodyFont:  { family: "Inter" }
-            }
-          },
-          interaction: {
-            mode: "index",
-            intersect: false
-          }
-        }
-      });
-    })();
-  </script>
-</body>
-</html>
+ 
