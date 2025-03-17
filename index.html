@@ -2,10 +2,8 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Match Stats & Momentum (Fixed Height, Responsive Width)</title>
-  <!-- Load Chart.js -->
+  <title>No Container Demo, Animations</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Load the Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
@@ -13,60 +11,49 @@
   <style>
     body {
       margin: 0;
-      padding: 20px;
+      padding: 5px;
       background: #f8f8f8;
       font-family: 'Inter', sans-serif;
+      text-align: center;   /* just to center the canvases horizontally */
     }
 
     /* 
-      A simple container to limit width and center the chart.
-      On mobile, it will be narrower than 900px automatically.
-    */
-    .chart-container {
-      width: 90vw;
-      max-width: 900px;
-      margin: 0px auto;
-      background: #fff;
-      border-radius: 1px;
-      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    }
-
-    /*
-      Each chart will have a fixed height in CSS, so it doesn't 
-      stretch awkwardly on wider screens. The width is 100% 
-      so it fills the container horizontally, but the height 
-      stays consistent.
+      Two plain canvases, each up to 90% viewport width or 900px, 
+      with a default 2:1 aspect ratio from Chart.js if not overridden.
+      No extra container <div> needed.
     */
     canvas {
-      display: block;
-      width: 100% !important;
-      height: 400px !important; /* Adjust as desired */
+      display: inline-block;
+      width: 90vw;
+      max-width: 900px;
+      margin: 5px auto;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
-
-    /* If you want different heights for each chart:
-    #statsChart { height: 450px !important; }
-    #momentumChart { height: 350px !important; }
-    */
   </style>
 </head>
 <body>
-  <!-- Bar Chart Container -->
-  <div class="chart-container">
-    <canvas id="statsChart"></canvas>
-  </div>
 
-  <!-- Momentum Chart Container -->
-  <div class="chart-container">
-    <canvas id="momentumChart"></canvas>
-  </div>
+  <!-- Bar Chart for Stats (with delayed animation) -->
+  <canvas id="statsChart"></canvas>
+
+  <!-- Momentum Line Chart (simple line animation) -->
+  <canvas id="momentumChart"></canvas>
 
   <script>
     /*************************************************************
-     * 1) PARSE URL PARAMS (No placeholders)
+     * 1) GLOBAL COLOR VARIABLES
+     *************************************************************/
+    const HOME_COLOR = "#fa3048";
+    const AWAY_COLOR = "#2c2c2c";
+
+    /*************************************************************
+     * 2) PARSE URL PARAMS
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // --- Bar Chart Stats ---
+    // A) Bar Chart Stats
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -86,19 +73,18 @@
     const homeReds          = Number(params.get("home_reds")          || 0);
     const awayReds          = Number(params.get("away_reds")          || 0);
 
-    // e.g. 40 vs 60
     const possessionHome    = Number(params.get("possessionHome")     || 0);
     const possessionAway    = Number(params.get("possessionAway")     || 0);
 
-    // --- Momentum chart data (CSV) ---
+    // B) Momentum Chart Data
     const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
     const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
-    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
+    const timeData = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 2) BUILD BAR CHART DATA
+     * 3) BAR CHART DATA
      *************************************************************/
     const statLabels = [
       "Ball Possession",
@@ -112,6 +98,7 @@
       "Yellows",
       "Reds"
     ];
+
     const homeValues = [
       possessionHome,
       homeShots,
@@ -124,6 +111,7 @@
       homeYellows,
       homeReds
     ];
+
     const awayValues = [
       possessionAway,
       awayShots,
@@ -138,32 +126,46 @@
     ];
 
     /*************************************************************
-     * 3) RENDER BAR CHART (responsive, fixed canvas height)
+     * 4) BAR CHART CONFIG (with delayed animation)
      *************************************************************/
-    const ctxBar = document.getElementById("statsChart").getContext("2d");
-    new Chart(ctxBar, {
-      type: "bar",
+    let delayed = false;  // track if animation ran
+
+    const barChartConfig = {
+      type: 'bar',
       data: {
         labels: statLabels,
         datasets: [
           {
             label: "Home",
             data: homeValues,
-            backgroundColor: "#fa3048",
+            backgroundColor: HOME_COLOR,
             borderRadius: 6
           },
           {
             label: "Away",
             data: awayValues,
-            backgroundColor: "#2c2c2c",
+            backgroundColor: AWAY_COLOR,
             borderRadius: 6
           }
         ]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false, // Rely on CSS for height
-        indexAxis: "y",
+        maintainAspectRatio: true, // default ratio (2:1) unless you set aspectRatio yourself
+        indexAxis: 'y',
+        animation: {
+          onComplete: () => {
+            delayed = true;
+          },
+          delay: (context) => {
+            let delay = 0;
+            if (context.type === 'data' && context.mode === 'default' && !delayed) {
+              // e.g. stagger the bars by dataIndex
+              delay = context.dataIndex * 300 + context.datasetIndex * 100;
+            }
+            return delay;
+          },
+        },
         scales: {
           x: {
             grid: { display: false },
@@ -185,7 +187,7 @@
         plugins: {
           legend: {
             display: true,
-            position: "top",
+            position: 'top',
             labels: {
               font: {
                 family: "Inter",
@@ -211,38 +213,61 @@
           }
         }
       }
-    });
+    };
+
+    // Create the stats chart
+    const statsCtx = document.getElementById("statsChart").getContext("2d");
+    new Chart(statsCtx, barChartConfig);
 
     /*************************************************************
-     * 4) RENDER MOMENTUM LINE CHART
+     * 5) MOMENTUM CHART CONFIG (simple line animation)
      *************************************************************/
-    const ctxLine = document.getElementById("momentumChart").getContext("2d");
-    new Chart(ctxLine, {
-      type: "line",
+    const momentumLineConfig = {
+      type: 'line',
       data: {
         labels: timeData,
         datasets: [
           {
             label: "Home Momentum",
             data: homeMomentumData,
-            borderColor: "#e74c3c",
-            borderWidth: 2,
+            borderColor: HOME_COLOR,
+            borderWidth: 1,
             radius: 0
           },
           {
             label: "Away Momentum",
             data: awayMomentumData,
-            borderColor: "#3498db",
-            borderWidth: 2,
+            borderColor: AWAY_COLOR,
+            borderWidth: 1,
             radius: 0
           }
         ]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false, // Rely on CSS for height
+        maintainAspectRatio: true,
+        // simple animation object from your snippet
+        animation: {
+          duration: 1000, // or customize
+        },
+        interaction: {
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              font: {
+                family: "Inter",
+                weight: "700"
+              }
+            }
+          }
+        },
         scales: {
           x: {
+            type: 'linear',
             title: {
               display: true,
               text: "Time (minutes)",
@@ -256,12 +281,9 @@
                 family: "Inter",
                 weight: "700"
               }
-            },
-            grid: { display: true }
+            }
           },
           y: {
-            min: 0,
-            max: 1,
             title: {
               display: true,
               text: "Momentum",
@@ -276,37 +298,17 @@
                 weight: "700"
               }
             },
-            grid: { display: true }
+            min: 0,
+            max: 1
           }
-        },
-        plugins: {
-          legend: {
-            position: "top",
-            labels: {
-              font: {
-                family: "Inter",
-                weight: "700"
-              }
-            }
-          },
-          tooltip: {
-            mode: "index",
-            intersect: false,
-            titleFont: {
-              family: "Inter",
-              weight: "700"
-            },
-            bodyFont: {
-              family: "Inter"
-            }
-          }
-        },
-        interaction: {
-          mode: "index",
-          intersect: false
         }
       }
-    });
+    };
+
+    // Create the momentum chart
+    const momentumCtx = document.getElementById("momentumChart").getContext("2d");
+    new Chart(momentumCtx, momentumLineConfig);
+
   </script>
 </body>
 </html>
