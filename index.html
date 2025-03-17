@@ -148,7 +148,7 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false,
           indexAxis: 'y',
           plugins: {
             title: {
@@ -230,7 +230,7 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false,
           scales: {
             x: {
               type: "linear",
@@ -244,8 +244,8 @@
               }
             },
             y: {
-              min: 0,
-              max: 1.2,
+              min: -0.03,
+              max: 1.03,
               title: {
                 display: true,
                 text: "Momentum",
@@ -296,13 +296,13 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
+          maintainAspectRatio: false,
           plugins: {
             title: {
               display: true,
               text: "Ball Possession",
               font: { family: "Inter", weight: "700", size: 16 },
-              padding: { top: 10, bottom: 10 }
+              padding: { top: 5, bottom: 5 }
             },
             legend: {
               position: "top",
