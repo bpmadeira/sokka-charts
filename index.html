@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Compact Stat Charts + Taller Momentum</title>
+  <title>One Chart per Stat + Momentum (No Fixed Height, Thinner Bars)</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +13,18 @@
       padding: 20px;
       background: #f8f8f8;
       font-family: "Inter", sans-serif;
-      text-align: center; /* center the canvases horizontally */
+      text-align: center; /* to center the canvases horizontally */
     }
+
     /*
-      We'll create a smaller height for each stat bar chart (e.g., 200px),
-      and a larger height for the momentum chart (e.g., 500px). 
-      They can still be up to 90% viewport width, max 900px, centered.
+      Each chart is up to 90% viewport width, 900px max, 
+      no fixed height => Chart.js enforces aspect ratio by default (2:1).
     */
-    .stat-canvas {
-      display: inline-block;
-      width: 90vw;
-      max-width: 900px;
-      height: 200px;     /* Smaller chart height */
-      margin: 20px auto;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
+    .stat-canvas, 
     #momentumChart {
       display: inline-block;
       width: 90vw;
       max-width: 900px;
-      height: 500px;     /* Taller momentum chart */
       margin: 20px auto;
       background: #fff;
       border-radius: 8px;
@@ -43,17 +33,17 @@
   </style>
 </head>
 <body>
-  <!-- We'll dynamically insert one <canvas> for each stat here -->
+  <!-- We'll dynamically insert one chart per stat here -->
   <div id="stats-container"></div>
 
-  <!-- Momentum Chart Canvas -->
+  <!-- Momentum chart -->
   <canvas id="momentumChart"></canvas>
 
   <script>
     /*************************************************************
      * 1) GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048";
+    const HOME_COLOR = "#fa3048"; 
     const AWAY_COLOR = "#2c2c2c";
 
     /*************************************************************
@@ -61,7 +51,7 @@
      *************************************************************/
     const params = new URLSearchParams(window.location.search);
 
-    // Stats
+    // --- A) Bar Chart Stats (absolute values, one chart per stat) ---
     const homeShots         = Number(params.get("home_shots")         || 0);
     const awayShots         = Number(params.get("away_shots")         || 0);
     const homeShotsOnGoal   = Number(params.get("home_shots_on_goal") || 0);
@@ -84,15 +74,15 @@
     const possessionHome    = Number(params.get("possessionHome")     || 0);
     const possessionAway    = Number(params.get("possessionAway")     || 0);
 
-    // Momentum
-    const rawTimeTracker = params.get("time_tracker")    || "0,15,30,45,60,75,90";
-    const rawMomentum    = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData       = rawTimeTracker.split(",").map(x => Number(x.trim()));
-    const homeMomentumData = rawMomentum.split(",").map(x => Number(x.trim()));
-    const awayMomentumData = homeMomentumData.map(v => 1 - v);
+    // --- B) Momentum Chart Data ---
+    const rawTimeTracker    = params.get("time_tracker")    || "0,15,30,45,60,75,90";
+    const rawMomentum       = params.get("momentum_tracker")|| "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
 
     /*************************************************************
-     * 3) BUILD STAT ARRAY
+     * 3) BUILD AN ARRAY OF STATS
      *************************************************************/
     const statsArray = [
       { label: "Ball Possession", homeValue: possessionHome, awayValue: possessionAway },
@@ -108,32 +98,32 @@
     ];
 
     /*************************************************************
-     * 4) CREATE ONE CHART PER STAT
+     * 4) CREATE ONE HORIZONTAL BAR CHART PER STAT
      *************************************************************/
     const statsContainer = document.getElementById("stats-container");
 
     statsArray.forEach((stat, index) => {
-      // Create a canvas for this stat
+      // Create a <canvas> for this stat
       const canvas = document.createElement("canvas");
-      canvas.className = "stat-canvas";  // see .stat-canvas CSS
+      canvas.className = "stat-canvas";
       canvas.id = `chart-${stat.label.replace(/\s+/g, '-')}`;
       statsContainer.appendChild(canvas);
 
-      // Build the chart
+      // Build the bar chart
       new Chart(canvas.getContext("2d"), {
         type: "bar",
         data: {
-          labels: [stat.label], // single category => 1 row
+          labels: [ stat.label ], // single row
           datasets: [
             {
               label: "Home",
-              data: [stat.homeValue],
+              data: [ stat.homeValue ],
               backgroundColor: HOME_COLOR,
               borderRadius: 6
             },
             {
               label: "Away",
-              data: [stat.awayValue],
+              data: [ stat.awayValue ],
               backgroundColor: AWAY_COLOR,
               borderRadius: 6
             }
@@ -141,12 +131,12 @@
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false, // obey our fixed .stat-canvas height
+          maintainAspectRatio: true,  // let Chart.js control the ratio
           indexAxis: "y",             // horizontal bars
           plugins: {
             title: {
               display: true,
-              text: stat.label, // the chart title
+              text: stat.label,
               font: {
                 family: "Inter",
                 weight: "700",
@@ -155,8 +145,9 @@
               padding: { top: 10, bottom: 10 }
             },
             legend: {
-              display: index === 0, // only show legend on the first chart
-              position: 'top',
+              // Only show legend on the first chart
+              display: (index === 0),
+              position: "top",
               labels: {
                 font: { family: 'Inter', weight: '700' }
               }
@@ -165,18 +156,19 @@
               titleFont: { family: 'Inter', weight: '700' },
               bodyFont:  { family: 'Inter' },
               callbacks: {
-                label: ctx => {
+                label: (ctx) => {
                   const val = ctx.parsed.x || 0;
-                  const label = ctx.dataset.label || "";
-                  return `${label}: ${val}`;
+                  const who = ctx.dataset.label || "";
+                  return `${who}: ${val}`;
                 }
               }
             }
           },
           elements: {
             bar: {
-              barPercentage: 0.5,      // smaller bars
-              categoryPercentage: 0.6  // space between them
+              // Make bars narrower
+              barPercentage: 0.5,
+              categoryPercentage: 0.6
             }
           },
           scales: {
@@ -184,13 +176,12 @@
               beginAtZero: true,
               ticks: {
                 font: { family: 'Inter', weight: '700' },
-                color: '#666'
+                color: "#666"
               },
               grid: { display: true }
             },
             y: {
-              // single category row => no need to show label
-              ticks: { display: false },
+              ticks: { display: false }, // single label for row -> hidden
               grid: { display: false }
             }
           }
@@ -199,10 +190,10 @@
     });
 
     /*************************************************************
-     * 5) MOMENTUM LINE CHART (Taller)
+     * 5) MOMENTUM LINE CHART with slightly reduced line thickness
+     *    (e.g. borderWidth: 3 or 4 instead of 6).
      *************************************************************/
-    const ctxMomentum = document.getElementById("momentumChart").getContext("2d");
-    new Chart(ctxMomentum, {
+    new Chart(document.getElementById("momentumChart").getContext("2d"), {
       type: "line",
       data: {
         labels: timeData,
@@ -211,21 +202,21 @@
             label: "Home Momentum",
             data: homeMomentumData,
             borderColor: HOME_COLOR,
-            borderWidth: 6,
+            borderWidth: 4, // reduce from 6 to 4
             radius: 0
           },
           {
             label: "Away Momentum",
             data: awayMomentumData,
             borderColor: AWAY_COLOR,
-            borderWidth: 6,
+            borderWidth: 4,
             radius: 0
           }
         ]
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false, // obey #momentumChart { height: 500px }
+        maintainAspectRatio: true,  // default ratio
         scales: {
           x: {
             type: "linear",
