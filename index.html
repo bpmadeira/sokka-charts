@@ -18,7 +18,6 @@
       min-height: 100vh;
       overflow-y: auto;
     }
-
     .chart-container {
       width: 90vw;
       max-width: 900px;
@@ -31,7 +30,6 @@
     .chart-container:last-child {
       margin-bottom: 60px;
     }
-
     #possessionChart {
       width: 100%;
       max-width: 400px;
@@ -57,13 +55,13 @@
     <div id="possessionChart"></div>
   </div>
 
-  <!-- 4) Home Zones: Attacking + Defending (bar+marker) -->
+  <!-- 4) Home Zones Chart (Bar + Custom Marker) -->
   <div class="chart-container">
     <h2>Home Zones</h2>
     <div id="homeZonesChart"></div>
   </div>
 
-  <!-- 5) Away Zones: Attacking + Defending (bar+marker) -->
+  <!-- 5) Away Zones Chart (Bar + Custom Marker) -->
   <div class="chart-container">
     <h2>Away Zones</h2>
     <div id="awayZonesChart"></div>
@@ -71,20 +69,31 @@
 
   <script>
     /*************************************************************
-     * 1) GLOBAL COLORS & PARSING
+     * GLOBAL COLORS & PARAMETER PARSING
      *************************************************************/
-    const HOME_COLOR = "#fa3048"; // Red for Home
-    const AWAY_COLOR = "#2c2c2c"; // Dark Gray for Away
+    // Base colors for momentum/possession & stats
+    const HOME_COLOR = "#fa3048";   // Red for Home (attacking)
+    const AWAY_COLOR = "#2c2c2c";   // Dark Gray for Away (attacking)
+    // Darker variants for defending:
+    const HOME_DEFEND_COLOR = "#a10b2f";  
+    const AWAY_DEFEND_COLOR = "#1a1a1a";
 
     const params = new URLSearchParams(window.location.search);
 
+    // Basic numeric param parser
     function numParam(name, defaultVal = 0) {
       const val = params.get(name);
       return val ? Number(val) : defaultVal;
     }
+    // Integer param parser (rounded)
+    function intParam(name, defaultVal = 0) {
+      const val = params.get(name);
+      return val ? Math.round(Number(val)) : defaultVal;
+    }
 
     /*************************************************************
-     * 2) MATCH STATS: TWO-SIDED BAR
+     * MATCH STATS: TWO-SIDED BAR CHART
+     * (Home bars point left, Away bars point right)
      *************************************************************/
     const homeStats = [
       numParam("home_shots"), 
@@ -112,10 +121,8 @@
       "Shots", "Shots on Goal", "Goal Chances", "Duels Won",
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
-
-    // Convert home stats to negative
+    // For home, use negative values so bars extend left
     const homeStatsNeg = homeStats.map(v => -v);
-    // Find symmetrical min/max
     const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
 
     new ApexCharts(document.querySelector("#statsChart"), {
@@ -126,19 +133,13 @@
       ],
       xaxis: {
         categories: statLabels,
-        labels: {
-          formatter: (val) => Math.abs(val).toString()
-        },
+        labels: { formatter: (val) => Math.abs(val).toString() },
         min: -maxVal,
         max: maxVal
       },
       yaxis: { reversed: true },
       plotOptions: {
-        bar: {
-          horizontal: true,
-          barHeight: "60%",
-          dataLabels: { position: "center" }
-        }
+        bar: { horizontal: true, barHeight: "60%", dataLabels: { position: "center" } }
       },
       dataLabels: {
         enabled: true,
@@ -154,9 +155,8 @@
       legend: { position: "top" }
     }).render();
 
-
     /*************************************************************
-     * 3) MOMENTUM
+     * MOMENTUM CHART (Line)
      *************************************************************/
     const rawTimeTracker = params.get("time_tracker") || "0,15,30,45,60,75,90";
     const rawMomentum = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
@@ -165,12 +165,7 @@
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
     new ApexCharts(document.querySelector("#momentumChart"), {
-      chart: {
-        type: "line",
-        height: 350,
-        zoom: { enabled: false },
-        toolbar: { show: false }
-      },
+      chart: { type: "line", height: 350, zoom: { enabled: false }, toolbar: { show: false } },
       series: [
         { name: "Home Momentum", data: homeMomentumData },
         { name: "Away Momentum", data: awayMomentumData }
@@ -184,171 +179,143 @@
       yaxis: {
         min: 0, max: 1,
         tickAmount: 2,
-        labels: {
-          formatter: (val) => val.toFixed(1),
-          style: { fontFamily: "Inter", fontWeight: "700" }
-        },
+        labels: { formatter: (val) => val.toFixed(1), style: { fontFamily: "Inter", fontWeight: "700" } },
         title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
       },
       stroke: { width: 4 },
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: {
-        text: "Momentum Over Time",
-        align: "center",
-        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
-      },
+      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
       legend: { position: "top" }
     }).render();
 
-
     /*************************************************************
-     * 4) POSSESSION (Donut)
+     * POSSESSION (Donut)
      *************************************************************/
     const possessionHome = numParam("possessionHome", 50);
     const possessionAway = numParam("possessionAway", 50);
 
     new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: { 
-        type: "donut",
-        height: 350,
-        width: "100%"
-      },
+      chart: { type: "donut", height: 350, width: "100%" },
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: {
-        text: "Ball Possession",
-        align: "center",
-        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
-      },
-      legend: {
-        position: "bottom",
-        offsetY: 10,
-        fontSize: "14px",
-        fontFamily: "Inter"
-      },
-      dataLabels: {
-        style: {
-          fontSize: "14px",
-          fontFamily: "Inter",
-          fontWeight: "bold"
-        }
-      },
-      plotOptions: {
-        pie: {
-          donut: {
-            size: "65%"
-          },
-          expandOnClick: false
-        }
-      },
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          chart: { height: 300 }
-        }
-      }]
+      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
+      legend: { position: "bottom", offsetY: 10, fontSize: "14px", fontFamily: "Inter" },
+      dataLabels: { style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "bold" } },
+      plotOptions: { pie: { donut: { size: "65%" }, expandOnClick: false } },
+      responsive: [{ breakpoint: 480, options: { chart: { height: 300 } } }]
     }).render();
 
-
     /*************************************************************
-     * 5) ZONE CHARTS (Bar + Marker)
-     * 
-     * We'll create two bar+marker charts:
-     *   A) HomeZonesChart
-     *   B) AwayZonesChart
-     * 
-     * X-axis categories (8 total):
-     *   1) A-Buildup  2) A-Midfield  3) A-Wingplay  4) A-LastThird
-     *   5) D-Buildup  6) D-Midfield  7) D-Wingplay  8) D-LastThird
-     * 
-     * The bar's value => the "initial" metric
-     * The marker => the "final" metric
+     * ZONE CHARTS (Bar + Custom Marker)
+     * We display attacking & defending together as 8 categories.
+     * - For Home: first 4 (Attacking) use HOME_COLOR, last 4 (Defending) use HOME_DEFEND_COLOR.
+     * - For Away: first 4 (Attacking) use AWAY_COLOR, last 4 (Defending) use AWAY_DEFEND_COLOR.
+     * Final values are shown as a custom marker: a very dark thick vertical line.
      *************************************************************/
+    const zoneCatsHome = [
+      "A-Buildup", "A-Midfield", "A-Wingplay", "A-LastThird",
+      "D-Buildup", "D-Midfield", "D-Wingplay", "D-LastThird"
+    ];
+    const zoneCatsAway = zoneCatsHome; // same categories for Away
 
-    // HOME
-    // 4 Attacking (initial, final)
+    // Home initial and final values (rounded)
     const homeAttackInitial = [
-      numParam("home_attack_initial_buildup"),
-      numParam("home_attack_initial_midfield"),
-      numParam("home_attack_initial_wingplay"),
-      numParam("home_attack_initial_lastthird")
+      intParam("home_attack_initial_buildup"),
+      intParam("home_attack_initial_midfield"),
+      intParam("home_attack_initial_wingplay"),
+      intParam("home_attack_initial_lastthird")
     ];
     const homeAttackFinal = [
-      numParam("home_attack_final_buildup"),
-      numParam("home_attack_final_midfield"),
-      numParam("home_attack_final_wingplay"),
-      numParam("home_attack_final_lastthird")
+      intParam("home_attack_final_buildup"),
+      intParam("home_attack_final_midfield"),
+      intParam("home_attack_final_wingplay"),
+      intParam("home_attack_final_lastthird")
     ];
-
-    // 4 Defending (initial, final)
     const homeDefendInitial = [
-      numParam("home_defend_initial_buildup"),
-      numParam("home_defend_initial_midfield"),
-      numParam("home_defend_initial_wingplay"),
-      numParam("home_defend_initial_lastthird")
+      intParam("home_defend_initial_buildup"),
+      intParam("home_defend_initial_midfield"),
+      intParam("home_defend_initial_wingplay"),
+      intParam("home_defend_initial_lastthird")
     ];
     const homeDefendFinal = [
-      numParam("home_defend_final_buildup"),
-      numParam("home_defend_final_midfield"),
-      numParam("home_defend_final_wingplay"),
-      numParam("home_defend_final_lastthird")
+      intParam("home_defend_final_buildup"),
+      intParam("home_defend_final_midfield"),
+      intParam("home_defend_final_wingplay"),
+      intParam("home_defend_final_lastthird")
+    ];
+    const homeInitial = [...homeAttackInitial, ...homeDefendInitial];
+    const homeFinal = [...homeAttackFinal, ...homeDefendFinal];
+
+    // Define colors for Home zone bars (8 points): first 4 for attacking, next 4 for defending
+    const homeZoneColors = [
+      HOME_COLOR, HOME_COLOR, HOME_COLOR, HOME_COLOR,
+      HOME_DEFEND_COLOR, HOME_DEFEND_COLOR, HOME_DEFEND_COLOR, HOME_DEFEND_COLOR
     ];
 
-    // Merge them into 8 categories
-    const homeInitial = [
-      ...homeAttackInitial, ...homeDefendInitial
-    ]; 
-    const homeFinal = [
-      ...homeAttackFinal, ...homeDefendFinal
+    // Away initial and final values (rounded)
+    const awayAttackInitial = [
+      intParam("away_attack_initial_buildup"),
+      intParam("away_attack_initial_midfield"),
+      intParam("away_attack_initial_wingplay"),
+      intParam("away_attack_initial_lastthird")
+    ];
+    const awayAttackFinal = [
+      intParam("away_attack_final_buildup"),
+      intParam("away_attack_final_midfield"),
+      intParam("away_attack_final_wingplay"),
+      intParam("away_attack_final_lastthird")
+    ];
+    const awayDefendInitial = [
+      intParam("away_defend_initial_buildup"),
+      intParam("away_defend_initial_midfield"),
+      intParam("away_defend_initial_wingplay"),
+      intParam("away_defend_initial_lastthird")
+    ];
+    const awayDefendFinal = [
+      intParam("away_defend_final_buildup"),
+      intParam("away_defend_final_midfield"),
+      intParam("away_defend_final_wingplay"),
+      intParam("away_defend_final_lastthird")
+    ];
+    const awayInitial = [...awayAttackInitial, ...awayDefendInitial];
+    const awayFinal = [...awayAttackFinal, ...awayDefendFinal];
+
+    // Define colors for Away zone bars
+    const awayZoneColors = [
+      AWAY_COLOR, AWAY_COLOR, AWAY_COLOR, AWAY_COLOR,
+      AWAY_DEFEND_COLOR, AWAY_DEFEND_COLOR, AWAY_DEFEND_COLOR, AWAY_DEFEND_COLOR
     ];
 
-    // We'll label them as below
-    const zoneCategoriesHome = [
-      "A-Buildup","A-Midfield","A-Wingplay","A-LastThird",
-      "D-Buildup","D-Midfield","D-Wingplay","D-LastThird"
-    ];
+    // Custom marker for final values: use a custom SVG path (vertical line)
+    const customMarker = {
+      size: 0, // ignore default circle
+      shape: "custom",
+      image: {
+        // This path draws a vertical line from (0,0) to (0,20)
+        // Adjust width/height as needed for thickness/length
+        path: 'M0,0 L0,20',
+        width: 4,
+        height: 20
+      },
+      offsetX: 0,
+      offsetY: 0
+    };
 
     new ApexCharts(document.querySelector("#homeZonesChart"), {
-      chart: {
-        height: 400,
-        type: "bar"
-      },
-      // Series[0] => bars (initial)
-      // Series[1] => markers (final)
+      chart: { height: 400, type: "bar", stacked: false },
       series: [
-        {
-          name: "Home (Initial)",
-          type: "bar",
-          data: homeInitial
-        },
-        {
-          name: "Home (Final)",
-          type: "scatter", // marker-only
-          data: homeFinal
-        }
+        { name: "Home (Initial)", type: "bar", data: homeInitial },
+        { name: "Home (Final)", type: "scatter", data: homeFinal, markers: customMarker }
       ],
-      xaxis: {
-        categories: zoneCategoriesHome
-      },
-      yaxis: {
-        title: { text: "Home Zones" }
-      },
+      xaxis: { categories: zoneCatsHome },
+      yaxis: { title: { text: "Home Zones" } },
       plotOptions: {
-        bar: {
-          columnWidth: "50%"
-        }
+        bar: { columnWidth: "50%", distributed: true }
       },
-      markers: {
-        size: 8, // marker radius
-        shape: "circle",
-        strokeColors: "#fff",
-        strokeWidth: 2
-      },
-      colors: [HOME_COLOR, HOME_COLOR], // same color, but one is bar, one is marker
-      legend: {
-        position: "top"
-      },
+      // Apply the custom colors for each bar data point (only affects the bar series)
+      colors: homeZoneColors,
+      legend: { position: "top" },
       title: {
         text: "Home Attacking & Defending (Zones)",
         align: "center",
@@ -356,84 +323,19 @@
       }
     }).render();
 
-
-    // AWAY
-    const awayAttackInitial = [
-      numParam("away_attack_initial_buildup"),
-      numParam("away_attack_initial_midfield"),
-      numParam("away_attack_initial_wingplay"),
-      numParam("away_attack_initial_lastthird")
-    ];
-    const awayAttackFinal = [
-      numParam("away_attack_final_buildup"),
-      numParam("away_attack_final_midfield"),
-      numParam("away_attack_final_wingplay"),
-      numParam("away_attack_final_lastthird")
-    ];
-
-    const awayDefendInitial = [
-      numParam("away_defend_initial_buildup"),
-      numParam("away_defend_initial_midfield"),
-      numParam("away_defend_initial_wingplay"),
-      numParam("away_defend_initial_lastthird")
-    ];
-    const awayDefendFinal = [
-      numParam("away_defend_final_buildup"),
-      numParam("away_defend_final_midfield"),
-      numParam("away_defend_final_wingplay"),
-      numParam("away_defend_final_lastthird")
-    ];
-
-    const awayInitial = [
-      ...awayAttackInitial, ...awayDefendInitial
-    ];
-    const awayFinal = [
-      ...awayAttackFinal, ...awayDefendFinal
-    ];
-
-    const zoneCategoriesAway = [
-      "A-Buildup","A-Midfield","A-Wingplay","A-LastThird",
-      "D-Buildup","D-Midfield","D-Wingplay","D-LastThird"
-    ];
-
     new ApexCharts(document.querySelector("#awayZonesChart"), {
-      chart: {
-        height: 400,
-        type: "bar"
-      },
+      chart: { height: 400, type: "bar", stacked: false },
       series: [
-        {
-          name: "Away (Initial)",
-          type: "bar",
-          data: awayInitial
-        },
-        {
-          name: "Away (Final)",
-          type: "scatter",
-          data: awayFinal
-        }
+        { name: "Away (Initial)", type: "bar", data: awayInitial },
+        { name: "Away (Final)", type: "scatter", data: awayFinal, markers: customMarker }
       ],
-      xaxis: {
-        categories: zoneCategoriesAway
-      },
-      yaxis: {
-        title: { text: "Away Zones" }
-      },
+      xaxis: { categories: zoneCatsAway },
+      yaxis: { title: { text: "Away Zones" } },
       plotOptions: {
-        bar: {
-          columnWidth: "50%"
-        }
+        bar: { columnWidth: "50%", distributed: true }
       },
-      markers: {
-        size: 8,
-        shape: "circle",
-        strokeColors: "#fff",
-        strokeWidth: 2
-      },
-      colors: [AWAY_COLOR, AWAY_COLOR],
-      legend: {
-        position: "top"
-      },
+      colors: awayZoneColors,
+      legend: { position: "top" },
       title: {
         text: "Away Attacking & Defending (Zones)",
         align: "center",
@@ -441,12 +343,8 @@
       }
     }).render();
 
-
-    // A small timeout to ensure final layout is correct
-    setTimeout(() => {
-      window.dispatchEvent(new Event("resize"));
-    }, 100);
-
+    // Small timeout to ensure layout is correct
+    setTimeout(() => { window.dispatchEvent(new Event("resize")); }, 100);
   </script>
 </body>
 </html>
