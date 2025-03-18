@@ -96,15 +96,11 @@
 
   <script>
     /*************************************************************
-     * GLOBAL COLORS & PARSING
+     * 1) GLOBAL COLORS & PARSING
      *************************************************************/
-    // For Momentum & Possession
-    const HOME_COLOR = "#fa3048";
+    // We'll use the same RED & DARK GRAY for Home/Away across all charts
+    const HOME_COLOR = "#fa3048"; 
     const AWAY_COLOR = "#2c2c2c";
-
-    // For two-sided bar chart
-    const HOME_BAR_COLOR = "#2ECC71"; // Green
-    const AWAY_BAR_COLOR = "#3498DB"; // Blue
 
     const params = new URLSearchParams(window.location.search);
 
@@ -178,15 +174,18 @@
       numParam("away_defend_wingplay"),
       numParam("away_defend_lastthird")
     ];
+
+    // We'll define a color set for the 4 slices in the Polar charts
     const ZONE_COLORS = ["#008FFB", "#00E396", "#FEB019", "#FF4560"];
 
-    /*************************************************************
-     * 1) TWO-SIDED BAR CHART (Match Stats) with symmetrical axis
-     *************************************************************/
-    // Convert Home stats to negative values so bars extend left
-    const homeStatsNegative = homeStats.map(val => -val);
 
-    // Find max absolute value to set symmetrical min/max
+    /*************************************************************
+     * A) TWO-SIDED BAR CHART (Stats) with symmetrical X-axis
+     *************************************************************/
+    // Convert Home stats to negative for left-hand bars
+    const homeStatsNeg = homeStats.map(val => -val);
+
+    // Determine symmetrical min/max from absolute values
     const maxVal = Math.max(
       ...homeStats.map(Math.abs),
       ...awayStats.map(Math.abs)
@@ -195,7 +194,7 @@
     new ApexCharts(document.querySelector("#statsChart"), {
       chart: { type: "bar", height: 400 },
       series: [
-        { name: "Home", data: homeStatsNegative },
+        { name: "Home", data: homeStatsNeg },
         { name: "Away", data: awayStats }
       ],
       xaxis: {
@@ -207,15 +206,13 @@
         max: maxVal
       },
       yaxis: {
-        reversed: true // top category on top
+        reversed: true
       },
       plotOptions: {
         bar: {
           horizontal: true,
           barHeight: "60%",
-          dataLabels: {
-            position: "center"
-          }
+          dataLabels: { position: "center" }
         }
       },
       dataLabels: {
@@ -227,17 +224,20 @@
           fontWeight: "700"
         }
       },
-      colors: [HOME_BAR_COLOR, AWAY_BAR_COLOR],
+      colors: [HOME_COLOR, AWAY_COLOR], // RED vs. DARK GRAY
       title: {
         text: "Match Stats",
         align: "center",
         style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
       },
-      legend: { position: "top" }
+      legend: {
+        position: "top"
+      }
     }).render();
 
+
     /*************************************************************
-     * 2) MOMENTUM (Line Chart)
+     * B) MOMENTUM (Line Chart)
      *************************************************************/
     new ApexCharts(document.querySelector("#momentumChart"), {
       chart: {
@@ -252,15 +252,27 @@
       ],
       xaxis: {
         categories: timeData,
-        title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } },
+        title: {
+          text: "Time (minutes)",
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        },
         tickAmount: 3,
-        labels: { rotate: 0, style: { fontFamily: "Inter", fontWeight: "700" } }
+        labels: {
+          rotate: 0,
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        }
       },
       yaxis: {
         min: 0, max: 1,
         tickAmount: 2,
-        labels: { formatter: (val) => val.toFixed(1), style: { fontFamily: "Inter", fontWeight: "700" } },
-        title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
+        labels: {
+          formatter: (val) => val.toFixed(1),
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        },
+        title: {
+          text: "Momentum",
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        }
       },
       stroke: { width: 4 },
       colors: [HOME_COLOR, AWAY_COLOR],
@@ -272,11 +284,12 @@
       legend: { position: "top" }
     }).render();
 
+
     /*************************************************************
-     * 3) POSSESSION (Donut Chart)
+     * C) POSSESSION (Donut Chart)
      *************************************************************/
     new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: {
+      chart: { 
         type: "donut",
         height: 350,
         width: "100%"
@@ -313,17 +326,16 @@
       responsive: [{
         breakpoint: 480,
         options: {
-          chart: {
-            height: 300
-          }
+          chart: { height: 300 }
         }
       }]
     }).render();
 
+
     /*************************************************************
-     * 4) POLAR-AREA CHARTS (Zone Strengths)
+     * D) POLAR-AREA CHARTS (Zone Strength)
      *************************************************************/
-    // HOME ATTACKING
+    // Home Attacking
     new ApexCharts(document.querySelector("#polarHomeAttack"), {
       chart: { type: "polarArea", height: 350 },
       series: homeAttackData,
@@ -331,12 +343,13 @@
       colors: ZONE_COLORS,
       title: { text: "Home Attacking", align: "center" },
       legend: { position: "bottom" },
-      stroke: { colors: ["#fff"] },
+      stroke: { colors: ["#fff"], width: 2 },
       fill: { opacity: 0.85 },
-      yaxis: { show: false }
+      yaxis: { show: false },
+      noData: { text: "No Data" }
     }).render();
 
-    // HOME DEFENDING
+    // Home Defending
     new ApexCharts(document.querySelector("#polarHomeDefend"), {
       chart: { type: "polarArea", height: 350 },
       series: homeDefendData,
@@ -344,12 +357,13 @@
       colors: ZONE_COLORS,
       title: { text: "Home Defending", align: "center" },
       legend: { position: "bottom" },
-      stroke: { colors: ["#fff"] },
+      stroke: { colors: ["#fff"], width: 2 },
       fill: { opacity: 0.85 },
-      yaxis: { show: false }
+      yaxis: { show: false },
+      noData: { text: "No Data" }
     }).render();
 
-    // AWAY ATTACKING
+    // Away Attacking
     new ApexCharts(document.querySelector("#polarAwayAttack"), {
       chart: { type: "polarArea", height: 350 },
       series: awayAttackData,
@@ -357,12 +371,13 @@
       colors: ZONE_COLORS,
       title: { text: "Away Attacking", align: "center" },
       legend: { position: "bottom" },
-      stroke: { colors: ["#fff"] },
+      stroke: { colors: ["#fff"], width: 2 },
       fill: { opacity: 0.85 },
-      yaxis: { show: false }
+      yaxis: { show: false },
+      noData: { text: "No Data" }
     }).render();
 
-    // AWAY DEFENDING
+    // Away Defending
     new ApexCharts(document.querySelector("#polarAwayDefend"), {
       chart: { type: "polarArea", height: 350 },
       series: awayDefendData,
@@ -370,16 +385,16 @@
       colors: ZONE_COLORS,
       title: { text: "Away Defending", align: "center" },
       legend: { position: "bottom" },
-      stroke: { colors: ["#fff"] },
+      stroke: { colors: ["#fff"], width: 2 },
       fill: { opacity: 0.85 },
-      yaxis: { show: false }
+      yaxis: { show: false },
+      noData: { text: "No Data" }
     }).render();
 
-    // Force a small layout reflow after rendering
+    // A small timeout to ensure the layout flows properly
     setTimeout(() => {
       window.dispatchEvent(new Event("resize"));
     }, 100);
-
   </script>
 </body>
 </html>
