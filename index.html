@@ -2,45 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Match Stats & Momentum</title>
+  <title>Match Stats, Momentum, Possession & Tactical Heatmap</title>
+  <!-- ApexCharts from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <!-- Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
+    /* Basic layout preventing scrollbars and ensuring full viewport usage */
     html, body {
       margin: 0;
       padding: 0;
+      width: 100vw;
+      height: 100vh;
       font-family: "Inter", sans-serif;
       background: #f8f8f8;
       text-align: center;
-      min-height: 100vh;
-      overflow-y: auto;
+      overflow: hidden; /* Minimizes scrollbars in an embed scenario */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
+
+    /* Each chart container is a flexible box with some padding & a card-like style */
     .chart-container {
       width: 90vw;
       max-width: 900px;
-      margin: 30px auto;
       background: #fff;
       border-radius: 8px;
-      padding: 20px 20px 30px 20px;
+      padding: 2vh;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 2vh;
     }
-    .chart-container:last-child {
-      margin-bottom: 60px;
+
+    /*
+      We'll define recommended heights for each chart.
+      Adjust these as needed for your embed scenario.
+    */
+    #statsChart {
+      width: 100%;
+      height: 40vh;
+      min-height: 320px; /* Large bar chart for stats */
+    }
+    #momentumChart {
+      width: 100%;
+      height: 30vh;
+      min-height: 280px; /* Momentum line chart */
     }
     #possessionChart {
-      width: 100%;
+      width: 80vw;          /* Donut chart can be narrower */
       max-width: 400px;
-      margin: auto;
-      min-height: 400px;
+      height: 30vh;
+      min-height: 280px;
+    }
+    #zoneHeatmap {
+      width: 100%;
+      height: 40vh;
+      min-height: 320px; /* Tactical heatmap (attack vs. defense) */
     }
   </style>
 </head>
 <body>
 
-  <!-- 1) Two-Sided Bar Chart (Match Stats) -->
+  <!-- 1) Stats Chart -->
   <div class="chart-container">
     <div id="statsChart"></div>
   </div>
@@ -50,103 +79,192 @@
     <div id="momentumChart"></div>
   </div>
 
-  <!-- 3) Possession Chart -->
+  <!-- 3) Ball Possession Chart -->
   <div class="chart-container">
     <div id="possessionChart"></div>
   </div>
 
-  <!-- 4) Home Zones Chart (Bar + Custom Marker) -->
+  <!-- 4) Tactical Heatmap -->
   <div class="chart-container">
-    <h2>Home Zones</h2>
-    <div id="homeZonesChart"></div>
-  </div>
-
-  <!-- 5) Away Zones Chart (Bar + Custom Marker) -->
-  <div class="chart-container">
-    <h2>Away Zones</h2>
-    <div id="awayZonesChart"></div>
+    <div id="zoneHeatmap"></div>
   </div>
 
   <script>
     /*************************************************************
-     * GLOBAL COLORS & PARAMETER PARSING
+     * GLOBAL COLORS
      *************************************************************/
-    // Base colors for momentum/possession & stats
-    const HOME_COLOR = "#fa3048";   // Red for Home (attacking)
-    const AWAY_COLOR = "#2c2c2c";   // Dark Gray for Away (attacking)
-    // Darker variants for defending:
-    const HOME_DEFEND_COLOR = "#a10b2f";  
-    const AWAY_DEFEND_COLOR = "#1a1a1a";
-
-    const params = new URLSearchParams(window.location.search);
-
-    // Basic numeric param parser
-    function numParam(name, defaultVal = 0) {
-      const val = params.get(name);
-      return val ? Number(val) : defaultVal;
-    }
-    // Integer param parser (rounded)
-    function intParam(name, defaultVal = 0) {
-      const val = params.get(name);
-      return val ? Math.round(Number(val)) : defaultVal;
-    }
+    const HOME_COLOR = "#fa3048";  // Red for Home
+    const AWAY_COLOR = "#2c2c2c";  // Dark Gray (or use Blue if you prefer)
 
     /*************************************************************
-     * MATCH STATS: TWO-SIDED BAR CHART
-     * (Home bars point left, Away bars point right)
+     * PARSE URL PARAMS (NO PLACEHOLDERS)
      *************************************************************/
+    const params = new URLSearchParams(window.location.search);
+
+    /* 1) Stats Chart Data:
+       Shots, Shots on Goal, Goal Chances, Duels Won,
+       Saves, Corners, Fouls, Yellows, Reds
+       "home_shots", "away_shots", etc.
+    */
     const homeStats = [
-      numParam("home_shots"), 
-      numParam("home_shots_on_goal"),
-      numParam("home_goal_chances"), 
-      numParam("home_duels_won"),
-      numParam("home_saves"), 
-      numParam("home_corners"),
-      numParam("home_fouls"), 
-      numParam("home_yellows"),
-      numParam("home_reds")
+      Number(params.get("home_shots")              || 0),
+      Number(params.get("home_shots_on_goal")      || 0),
+      Number(params.get("home_goal_chances")       || 0),
+      Number(params.get("home_duels_won")          || 0),
+      Number(params.get("home_saves")              || 0),
+      Number(params.get("home_corners")            || 0),
+      Number(params.get("home_fouls")              || 0),
+      Number(params.get("home_yellows")            || 0),
+      Number(params.get("home_reds")               || 0)
     ];
     const awayStats = [
-      numParam("away_shots"), 
-      numParam("away_shots_on_goal"),
-      numParam("away_goal_chances"), 
-      numParam("away_duels_won"),
-      numParam("away_saves"), 
-      numParam("away_corners"),
-      numParam("away_fouls"), 
-      numParam("away_yellows"),
-      numParam("away_reds")
+      Number(params.get("away_shots")              || 0),
+      Number(params.get("away_shots_on_goal")      || 0),
+      Number(params.get("away_goal_chances")       || 0),
+      Number(params.get("away_duels_won")          || 0),
+      Number(params.get("away_saves")              || 0),
+      Number(params.get("away_corners")            || 0),
+      Number(params.get("away_fouls")              || 0),
+      Number(params.get("away_yellows")            || 0),
+      Number(params.get("away_reds")               || 0)
     ];
     const statLabels = [
       "Shots", "Shots on Goal", "Goal Chances", "Duels Won",
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
-    // For home, use negative values so bars extend left
-    const homeStatsNeg = homeStats.map(v => -v);
-    const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
 
+    /* 2) Momentum Data Over Time:
+       "time_tracker" => array of minutes
+       "momentum_tracker" => array of home momentum (0..1)
+       away = 1 - home
+    */
+    const rawTimeTracker = params.get("time_tracker")     || "0,15,30,45,60,75,90";
+    const rawMomentum    = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const timeData          = rawTimeTracker.split(",").map(x => Number(x.trim()));
+    const homeMomentumData  = rawMomentum.split(",").map(x => Number(x.trim()));
+    const awayMomentumData  = homeMomentumData.map(v => 1 - v);
+
+    /* 3) Ball Possession:
+       "possessionHome", "possessionAway"
+    */
+    const possessionHome = Number(params.get("possessionHome") || 50);
+    const possessionAway = Number(params.get("possessionAway") || 50);
+
+    /* 4) Tactical Heatmap (Attack vs. Defense Ratios)
+       We have 32 columns:
+       home_attack_initial_buildup, home_defend_initial_buildup, away_attack_initial_buildup, away_defend_initial_buildup, ...
+       We'll define 2 series:
+         "HomeAtt vs AwayDef"
+         "HomeDef vs AwayAtt"
+       Each with 8 zone data points (buildup init/final, midfield init/final, wing init/final, lastthird init/final).
+       We'll compute ratio = home_attack / (home_attack + away_defend) for the first series, etc.
+    */
+
+    // Retrieve relevant values ( or 0 if missing ):
+    function val(name) { return Number(params.get(name) || 0); }
+
+    // For each zone pair, compute ratio for "HomeAtt vs AwayDef" and "HomeDef vs AwayAtt"
+    // ratio = home_attack / (home_attack + away_defend)
+    //        home_defend / (home_defend + away_attack)
+    // zoneCategories => e.g. Buildup(Init), Buildup(Final), Midfield(Init), ...
+    const zoneCategories = [
+      "Buildup (Initial)",
+      "Buildup (Final)",
+      "Midfield (Initial)",
+      "Midfield (Final)",
+      "Wingplay (Initial)",
+      "Wingplay (Final)",
+      "LastThird (Initial)",
+      "LastThird (Final)"
+    ];
+
+    function ratio(homeVal, awayVal) {
+      const sum = homeVal + awayVal;
+      return sum > 0 ? homeVal / sum : 0.5; // fallback ratio
+    }
+
+    // Calculate data for "HomeAtt vs AwayDef"
+    const homeAttAwayDefData = [
+      // Buildup(Init):
+      { x: zoneCategories[0],
+        y: ratio(val("home_attack_initial_buildup"), val("away_defend_initial_buildup")) },
+      // Buildup(Final):
+      { x: zoneCategories[1],
+        y: ratio(val("home_attack_final_buildup"), val("away_defend_final_buildup")) },
+      // Midfield(Init):
+      { x: zoneCategories[2],
+        y: ratio(val("home_attack_initial_midfield"), val("away_defend_initial_midfield")) },
+      // Midfield(Final):
+      { x: zoneCategories[3],
+        y: ratio(val("home_attack_final_midfield"), val("away_defend_final_midfield")) },
+      // Wing(Init):
+      { x: zoneCategories[4],
+        y: ratio(val("home_attack_initial_wingplay"), val("away_defend_initial_wingplay")) },
+      // Wing(Final):
+      { x: zoneCategories[5],
+        y: ratio(val("home_attack_final_wingplay"), val("away_defend_final_wingplay")) },
+      // LastThird(Init):
+      { x: zoneCategories[6],
+        y: ratio(val("home_attack_initial_lastthird"), val("away_defend_initial_lastthird")) },
+      // LastThird(Final):
+      { x: zoneCategories[7],
+        y: ratio(val("home_attack_final_lastthird"), val("away_defend_final_lastthird")) }
+    ];
+
+    // Calculate data for "HomeDef vs AwayAtt"
+    const homeDefAwayAttData = [
+      // Buildup(Init):
+      { x: zoneCategories[0],
+        y: ratio(val("home_defend_initial_buildup"), val("away_attack_initial_buildup")) },
+      // Buildup(Final):
+      { x: zoneCategories[1],
+        y: ratio(val("home_defend_final_buildup"), val("away_attack_final_buildup")) },
+      // Midfield(Init):
+      { x: zoneCategories[2],
+        y: ratio(val("home_defend_initial_midfield"), val("away_attack_initial_midfield")) },
+      // Midfield(Final):
+      { x: zoneCategories[3],
+        y: ratio(val("home_defend_final_midfield"), val("away_attack_final_midfield")) },
+      // Wing(Init):
+      { x: zoneCategories[4],
+        y: ratio(val("home_defend_initial_wingplay"), val("away_attack_initial_wingplay")) },
+      // Wing(Final):
+      { x: zoneCategories[5],
+        y: ratio(val("home_defend_final_wingplay"), val("away_attack_final_wingplay")) },
+      // LastThird(Init):
+      { x: zoneCategories[6],
+        y: ratio(val("home_defend_initial_lastthird"), val("away_attack_initial_lastthird")) },
+      // LastThird(Final):
+      { x: zoneCategories[7],
+        y: ratio(val("home_defend_final_lastthird"), val("away_attack_final_lastthird")) }
+    ];
+
+    const zoneHeatmapSeries = [
+      { name: "HomeAtt vs AwayDef", data: homeAttAwayDefData },
+      { name: "HomeDef vs AwayAtt", data: homeDefAwayAttData },
+    ];
+
+    /*************************************************************
+     * 1) STATS CHART (Horizontal Bars)
+     *************************************************************/
     new ApexCharts(document.querySelector("#statsChart"), {
-      chart: { type: "bar", height: 400 },
+      chart: {
+        type: "bar",
+        height: "100%",
+        width: "100%"
+      },
       series: [
-        { name: "Home", data: homeStatsNeg },
+        { name: "Home", data: homeStats },
         { name: "Away", data: awayStats }
       ],
-      xaxis: {
-        categories: statLabels,
-        labels: { formatter: (val) => Math.abs(val).toString() },
-        min: -maxVal,
-        max: maxVal
-      },
-      yaxis: { reversed: true },
-      plotOptions: {
-        bar: { horizontal: true, barHeight: "60%", dataLabels: { position: "center" } }
-      },
-      dataLabels: {
-        enabled: true,
-        formatter: (val) => Math.abs(val),
-        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700" }
-      },
+      xaxis: { categories: statLabels },
       colors: [HOME_COLOR, AWAY_COLOR],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          barHeight: "60%"
+        }
+      },
       title: {
         text: "Match Stats",
         align: "center",
@@ -156,195 +274,104 @@
     }).render();
 
     /*************************************************************
-     * MOMENTUM CHART (Line)
+     * 2) MOMENTUM CHART (Line Graph)
      *************************************************************/
-    const rawTimeTracker = params.get("time_tracker") || "0,15,30,45,60,75,90";
-    const rawMomentum = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData = rawTimeTracker.split(",").map(x => +x.trim());
-    const homeMomentumData = rawMomentum.split(",").map(x => +x.trim());
-    const awayMomentumData = homeMomentumData.map(v => 1 - v);
-
     new ApexCharts(document.querySelector("#momentumChart"), {
-      chart: { type: "line", height: 350, zoom: { enabled: false }, toolbar: { show: false } },
+      chart: {
+        type: "line",
+        height: "100%",
+        width: "100%"
+      },
       series: [
         { name: "Home Momentum", data: homeMomentumData },
         { name: "Away Momentum", data: awayMomentumData }
       ],
       xaxis: {
         categories: timeData,
-        title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } },
-        tickAmount: 3,
-        labels: { rotate: 0, style: { fontFamily: "Inter", fontWeight: "700" } }
+        title: {
+          text: "Time (minutes)",
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        }
       },
       yaxis: {
         min: 0, max: 1,
-        tickAmount: 2,
-        labels: { formatter: (val) => val.toFixed(1), style: { fontFamily: "Inter", fontWeight: "700" } },
-        title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
+        tickAmount: 2,  // 0, 0.5, 1
+        labels: {
+          formatter: (val) => val.toFixed(1),
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        },
+        title: {
+          text: "Momentum",
+          style: { fontFamily: "Inter", fontWeight: "700" }
+        }
       },
       stroke: { width: 4 },
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Momentum Over Time", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
+      title: {
+        text: "Momentum Over Time",
+        align: "center",
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
+      },
       legend: { position: "top" }
     }).render();
 
     /*************************************************************
-     * POSSESSION (Donut)
+     * 3) BALL POSSESSION (Donut)
      *************************************************************/
-    const possessionHome = numParam("possessionHome", 50);
-    const possessionAway = numParam("possessionAway", 50);
-
     new ApexCharts(document.querySelector("#possessionChart"), {
-      chart: { type: "donut", height: 350, width: "100%" },
+      chart: {
+        type: "donut",
+        height: "100%",
+        width: "100%"
+      },
       series: [possessionHome, possessionAway],
       labels: ["Home", "Away"],
       colors: [HOME_COLOR, AWAY_COLOR],
-      title: { text: "Ball Possession", align: "center", style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" } },
-      legend: { position: "bottom", offsetY: 10, fontSize: "14px", fontFamily: "Inter" },
-      dataLabels: { style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "bold" } },
-      plotOptions: { pie: { donut: { size: "65%" }, expandOnClick: false } },
-      responsive: [{ breakpoint: 480, options: { chart: { height: 300 } } }]
+      title: {
+        text: "Ball Possession",
+        align: "center",
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
+      },
+      legend: { position: "bottom" }
     }).render();
 
     /*************************************************************
-     * ZONE CHARTS (Bar + Custom Marker)
-     * We display attacking & defending together as 8 categories.
-     * - For Home: first 4 (Attacking) use HOME_COLOR, last 4 (Defending) use HOME_DEFEND_COLOR.
-     * - For Away: first 4 (Attacking) use AWAY_COLOR, last 4 (Defending) use AWAY_DEFEND_COLOR.
-     * Final values are shown as a custom marker: a very dark thick vertical line.
+     * 4) TACTICAL HEATMAP (Attack vs. Defense Ratios)
      *************************************************************/
-    const zoneCatsHome = [
-      "A-Buildup", "A-Midfield", "A-Wingplay", "A-LastThird",
-      "D-Buildup", "D-Midfield", "D-Wingplay", "D-LastThird"
-    ];
-    const zoneCatsAway = zoneCatsHome; // same categories for Away
-
-    // Home initial and final values (rounded)
-    const homeAttackInitial = [
-      intParam("home_attack_initial_buildup"),
-      intParam("home_attack_initial_midfield"),
-      intParam("home_attack_initial_wingplay"),
-      intParam("home_attack_initial_lastthird")
-    ];
-    const homeAttackFinal = [
-      intParam("home_attack_final_buildup"),
-      intParam("home_attack_final_midfield"),
-      intParam("home_attack_final_wingplay"),
-      intParam("home_attack_final_lastthird")
-    ];
-    const homeDefendInitial = [
-      intParam("home_defend_initial_buildup"),
-      intParam("home_defend_initial_midfield"),
-      intParam("home_defend_initial_wingplay"),
-      intParam("home_defend_initial_lastthird")
-    ];
-    const homeDefendFinal = [
-      intParam("home_defend_final_buildup"),
-      intParam("home_defend_final_midfield"),
-      intParam("home_defend_final_wingplay"),
-      intParam("home_defend_final_lastthird")
-    ];
-    const homeInitial = [...homeAttackInitial, ...homeDefendInitial];
-    const homeFinal = [...homeAttackFinal, ...homeDefendFinal];
-
-    // Define colors for Home zone bars (8 points): first 4 for attacking, next 4 for defending
-    const homeZoneColors = [
-      HOME_COLOR, HOME_COLOR, HOME_COLOR, HOME_COLOR,
-      HOME_DEFEND_COLOR, HOME_DEFEND_COLOR, HOME_DEFEND_COLOR, HOME_DEFEND_COLOR
-    ];
-
-    // Away initial and final values (rounded)
-    const awayAttackInitial = [
-      intParam("away_attack_initial_buildup"),
-      intParam("away_attack_initial_midfield"),
-      intParam("away_attack_initial_wingplay"),
-      intParam("away_attack_initial_lastthird")
-    ];
-    const awayAttackFinal = [
-      intParam("away_attack_final_buildup"),
-      intParam("away_attack_final_midfield"),
-      intParam("away_attack_final_wingplay"),
-      intParam("away_attack_final_lastthird")
-    ];
-    const awayDefendInitial = [
-      intParam("away_defend_initial_buildup"),
-      intParam("away_defend_initial_midfield"),
-      intParam("away_defend_initial_wingplay"),
-      intParam("away_defend_initial_lastthird")
-    ];
-    const awayDefendFinal = [
-      intParam("away_defend_final_buildup"),
-      intParam("away_defend_final_midfield"),
-      intParam("away_defend_final_wingplay"),
-      intParam("away_defend_final_lastthird")
-    ];
-    const awayInitial = [...awayAttackInitial, ...awayDefendInitial];
-    const awayFinal = [...awayAttackFinal, ...awayDefendFinal];
-
-    // Define colors for Away zone bars
-    const awayZoneColors = [
-      AWAY_COLOR, AWAY_COLOR, AWAY_COLOR, AWAY_COLOR,
-      AWAY_DEFEND_COLOR, AWAY_DEFEND_COLOR, AWAY_DEFEND_COLOR, AWAY_DEFEND_COLOR
-    ];
-
-    // Custom marker for final values: use a custom SVG path (vertical line)
-    const customMarker = {
-      size: 0, // ignore default circle
-      shape: "custom",
-      image: {
-        // This path draws a vertical line from (0,0) to (0,20)
-        // Adjust width/height as needed for thickness/length
-        path: 'M0,0 L0,20',
-        width: 4,
-        height: 20
+    new ApexCharts(document.querySelector("#zoneHeatmap"), {
+      chart: {
+        type: "heatmap",
+        height: "100%",
+        width: "100%"
       },
-      offsetX: 0,
-      offsetY: 0
-    };
-
-    new ApexCharts(document.querySelector("#homeZonesChart"), {
-      chart: { height: 400, type: "bar", stacked: false },
-      series: [
-        { name: "Home (Initial)", type: "bar", data: homeInitial },
-        { name: "Home (Final)", type: "scatter", data: homeFinal, markers: customMarker }
-      ],
-      xaxis: { categories: zoneCatsHome },
-      yaxis: { title: { text: "Home Zones" } },
+      series: zoneHeatmapSeries,
       plotOptions: {
-        bar: { columnWidth: "50%", distributed: true }
+        heatmap: {
+          shadeIntensity: 0.8,
+          colorScale: {
+            // min=0 => away dominance, max=1 => home dominance
+            min: 0,
+            max: 1,
+            inverse: false,
+            // gradient from AWAY_COLOR (ratio=0) to HOME_COLOR (ratio=1)
+            colors: [AWAY_COLOR, HOME_COLOR]
+          }
+        }
       },
-      // Apply the custom colors for each bar data point (only affects the bar series)
-      colors: homeZoneColors,
-      legend: { position: "top" },
+      dataLabels: {
+        enabled: true,
+        style: { fontFamily: "Inter", fontWeight: "700", colors: ["#ffffff"] },
+        formatter: (val) => val.toFixed(2)  // ratio with 2 decimals
+      },
+      xaxis: { type: "category" },
       title: {
-        text: "Home Attacking & Defending (Zones)",
+        text: "Tactical Heatmap (Attack vs Defense)",
         align: "center",
-        style: { fontWeight: "700", fontSize: "16px", fontFamily: "Inter" }
-      }
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
+      },
+      legend: { position: "top" }
     }).render();
 
-    new ApexCharts(document.querySelector("#awayZonesChart"), {
-      chart: { height: 400, type: "bar", stacked: false },
-      series: [
-        { name: "Away (Initial)", type: "bar", data: awayInitial },
-        { name: "Away (Final)", type: "scatter", data: awayFinal, markers: customMarker }
-      ],
-      xaxis: { categories: zoneCatsAway },
-      yaxis: { title: { text: "Away Zones" } },
-      plotOptions: {
-        bar: { columnWidth: "50%", distributed: true }
-      },
-      colors: awayZoneColors,
-      legend: { position: "top" },
-      title: {
-        text: "Away Attacking & Defending (Zones)",
-        align: "center",
-        style: { fontWeight: "700", fontSize: "16px", fontFamily: "Inter" }
-      }
-    }).render();
-
-    // Small timeout to ensure layout is correct
-    setTimeout(() => { window.dispatchEvent(new Event("resize")); }, 100);
   </script>
 </body>
 </html>
