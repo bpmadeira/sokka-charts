@@ -10,13 +10,13 @@
 
   <style>
     html, body {
-      overflow-y: auto; /* Allow vertical scrolling */
       margin: 0;
       padding: 0;
       font-family: "Inter", sans-serif;
       background: #f8f8f8;
       text-align: center;
       min-height: 100vh;
+      overflow-y: auto;
     }
 
     .chart-container {
@@ -32,22 +32,12 @@
       margin-bottom: 60px;
     }
 
-    /* Possession Chart styling */
     #possessionChart {
       width: 100%;
       max-width: 400px;
       margin: auto;
       min-height: 400px;
     }
-
-    /* Treemap containers */
-    #treemapAttacking, #treemapDefending {
-      width: 100%;
-      height: 450px; /* Adjust as needed */
-      margin: auto;
-      min-width: 320px;
-    }
-
   </style>
 </head>
 <body>
@@ -67,27 +57,25 @@
     <div id="possessionChart"></div>
   </div>
 
-  <!-- 4) Treemap Charts (Attacking & Defending) -->
+  <!-- 4) Home Zones: Attacking + Defending (bar+marker) -->
   <div class="chart-container">
-    <h2 style="margin-bottom: 10px;">Attacking Zones (Treemap)</h2>
-    <div id="treemapAttacking"></div>
+    <h2>Home Zones</h2>
+    <div id="homeZonesChart"></div>
   </div>
+
+  <!-- 5) Away Zones: Attacking + Defending (bar+marker) -->
   <div class="chart-container">
-    <h2 style="margin-bottom: 10px;">Defending Zones (Treemap)</h2>
-    <div id="treemapDefending"></div>
+    <h2>Away Zones</h2>
+    <div id="awayZonesChart"></div>
   </div>
 
   <script>
     /*************************************************************
      * 1) GLOBAL COLORS & PARSING
      *************************************************************/
-    // We'll stay consistent with your existing scheme:
-    // - RED / DARK GRAY for Home/Away in stats/momentum
-    const HOME_COLOR = "#fa3048";
-    const AWAY_COLOR = "#2c2c2c";
+    const HOME_COLOR = "#fa3048"; // Red for Home
+    const AWAY_COLOR = "#2c2c2c"; // Dark Gray for Away
 
-    // For the two-sided bar chart
-    // (We reuse HOME_COLOR & AWAY_COLOR so it’s consistent across all charts)
     const params = new URLSearchParams(window.location.search);
 
     function numParam(name, defaultVal = 0) {
@@ -95,7 +83,9 @@
       return val ? Number(val) : defaultVal;
     }
 
-    // 1) Parse Stats
+    /*************************************************************
+     * 2) MATCH STATS: TWO-SIDED BAR
+     *************************************************************/
     const homeStats = [
       numParam("home_shots"), 
       numParam("home_shots_on_goal"),
@@ -123,57 +113,10 @@
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
 
-    // 2) Momentum
-    const rawTimeTracker = params.get("time_tracker") || "0,15,30,45,60,75,90";
-    const rawMomentum = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
-    const timeData = rawTimeTracker.split(",").map(x => +x.trim());
-    const homeMomentumData = rawMomentum.split(",").map(x => +x.trim());
-    const awayMomentumData = homeMomentumData.map(v => 1 - v);
-
-    // 3) Possession
-    const possessionHome = numParam("possessionHome", 50);
-    const possessionAway = numParam("possessionAway", 50);
-
-    // 4) Zone Strength for Treemap
-    // We'll store attacking & defending for both home & away
-    const homeAttack = [
-      { x: "Buildup",   y: numParam("home_attack_buildup")   },
-      { x: "Midfield",  y: numParam("home_attack_midfield")  },
-      { x: "Wingplay",  y: numParam("home_attack_wingplay")  },
-      { x: "Last Third",y: numParam("home_attack_lastthird") }
-    ];
-    const awayAttack = [
-      { x: "Buildup",   y: numParam("away_attack_buildup")   },
-      { x: "Midfield",  y: numParam("away_attack_midfield")  },
-      { x: "Wingplay",  y: numParam("away_attack_wingplay")  },
-      { x: "Last Third",y: numParam("away_attack_lastthird") }
-    ];
-
-    const homeDefend = [
-      { x: "Buildup",   y: numParam("home_defend_buildup")   },
-      { x: "Midfield",  y: numParam("home_defend_midfield")  },
-      { x: "Wingplay",  y: numParam("home_defend_wingplay")  },
-      { x: "Last Third",y: numParam("home_defend_lastthird") }
-    ];
-    const awayDefend = [
-      { x: "Buildup",   y: numParam("away_defend_buildup")   },
-      { x: "Midfield",  y: numParam("away_defend_midfield")  },
-      { x: "Wingplay",  y: numParam("away_defend_wingplay")  },
-      { x: "Last Third",y: numParam("away_defend_lastthird") }
-    ];
-
-
-    /*************************************************************
-     * A) TWO-SIDED BAR CHART (Stats) with symmetrical X-axis
-     *************************************************************/
-    // Convert Home stats to negative for left-hand bars
-    const homeStatsNeg = homeStats.map(val => -val);
-
-    // Determine symmetrical min/max from absolute values
-    const maxVal = Math.max(
-      ...homeStats.map(Math.abs),
-      ...awayStats.map(Math.abs)
-    );
+    // Convert home stats to negative
+    const homeStatsNeg = homeStats.map(v => -v);
+    // Find symmetrical min/max
+    const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
 
     new ApexCharts(document.querySelector("#statsChart"), {
       chart: { type: "bar", height: 400 },
@@ -189,9 +132,7 @@
         min: -maxVal,
         max: maxVal
       },
-      yaxis: {
-        reversed: true
-      },
+      yaxis: { reversed: true },
       plotOptions: {
         bar: {
           horizontal: true,
@@ -202,11 +143,7 @@
       dataLabels: {
         enabled: true,
         formatter: (val) => Math.abs(val),
-        style: {
-          fontSize: "12px",
-          fontFamily: "Inter",
-          fontWeight: "700"
-        }
+        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700" }
       },
       colors: [HOME_COLOR, AWAY_COLOR],
       title: {
@@ -214,15 +151,19 @@
         align: "center",
         style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
       },
-      legend: {
-        position: "top"
-      }
+      legend: { position: "top" }
     }).render();
 
 
     /*************************************************************
-     * B) MOMENTUM (Line Chart)
+     * 3) MOMENTUM
      *************************************************************/
+    const rawTimeTracker = params.get("time_tracker") || "0,15,30,45,60,75,90";
+    const rawMomentum = params.get("momentum_tracker") || "0.5,0.55,0.6,0.55,0.4,0.7,0.6";
+    const timeData = rawTimeTracker.split(",").map(x => +x.trim());
+    const homeMomentumData = rawMomentum.split(",").map(x => +x.trim());
+    const awayMomentumData = homeMomentumData.map(v => 1 - v);
+
     new ApexCharts(document.querySelector("#momentumChart"), {
       chart: {
         type: "line",
@@ -236,15 +177,9 @@
       ],
       xaxis: {
         categories: timeData,
-        title: {
-          text: "Time (minutes)",
-          style: { fontFamily: "Inter", fontWeight: "700" }
-        },
+        title: { text: "Time (minutes)", style: { fontFamily: "Inter", fontWeight: "700" } },
         tickAmount: 3,
-        labels: {
-          rotate: 0,
-          style: { fontFamily: "Inter", fontWeight: "700" }
-        }
+        labels: { rotate: 0, style: { fontFamily: "Inter", fontWeight: "700" } }
       },
       yaxis: {
         min: 0, max: 1,
@@ -253,10 +188,7 @@
           formatter: (val) => val.toFixed(1),
           style: { fontFamily: "Inter", fontWeight: "700" }
         },
-        title: {
-          text: "Momentum",
-          style: { fontFamily: "Inter", fontWeight: "700" }
-        }
+        title: { text: "Momentum", style: { fontFamily: "Inter", fontWeight: "700" } }
       },
       stroke: { width: 4 },
       colors: [HOME_COLOR, AWAY_COLOR],
@@ -270,8 +202,11 @@
 
 
     /*************************************************************
-     * C) POSSESSION (Donut Chart)
+     * 4) POSSESSION (Donut)
      *************************************************************/
+    const possessionHome = numParam("possessionHome", 50);
+    const possessionAway = numParam("possessionAway", 50);
+
     new ApexCharts(document.querySelector("#possessionChart"), {
       chart: { 
         type: "donut",
@@ -317,112 +252,197 @@
 
 
     /*************************************************************
-     * D) TREEMAP CHARTS (Attacking & Defending)
-     *
-     * We'll create:
-     *   - #treemapAttacking with 2 series: 
-     *       1) "Home Attacking" -> homeAttack
-     *       2) "Away Attacking" -> awayAttack
-     *   - #treemapDefending with 2 series:
-     *       1) "Home Defending" -> homeDefend
-     *       2) "Away Defending" -> awayDefend
+     * 5) ZONE CHARTS (Bar + Marker)
+     * 
+     * We'll create two bar+marker charts:
+     *   A) HomeZonesChart
+     *   B) AwayZonesChart
+     * 
+     * X-axis categories (8 total):
+     *   1) A-Buildup  2) A-Midfield  3) A-Wingplay  4) A-LastThird
+     *   5) D-Buildup  6) D-Midfield  7) D-Wingplay  8) D-LastThird
+     * 
+     * The bar's value => the "initial" metric
+     * The marker => the "final" metric
      *************************************************************/
 
-    // 1) ATTACKING
-    new ApexCharts(document.querySelector("#treemapAttacking"), {
+    // HOME
+    // 4 Attacking (initial, final)
+    const homeAttackInitial = [
+      numParam("home_attack_initial_buildup"),
+      numParam("home_attack_initial_midfield"),
+      numParam("home_attack_initial_wingplay"),
+      numParam("home_attack_initial_lastthird")
+    ];
+    const homeAttackFinal = [
+      numParam("home_attack_final_buildup"),
+      numParam("home_attack_final_midfield"),
+      numParam("home_attack_final_wingplay"),
+      numParam("home_attack_final_lastthird")
+    ];
+
+    // 4 Defending (initial, final)
+    const homeDefendInitial = [
+      numParam("home_defend_initial_buildup"),
+      numParam("home_defend_initial_midfield"),
+      numParam("home_defend_initial_wingplay"),
+      numParam("home_defend_initial_lastthird")
+    ];
+    const homeDefendFinal = [
+      numParam("home_defend_final_buildup"),
+      numParam("home_defend_final_midfield"),
+      numParam("home_defend_final_wingplay"),
+      numParam("home_defend_final_lastthird")
+    ];
+
+    // Merge them into 8 categories
+    const homeInitial = [
+      ...homeAttackInitial, ...homeDefendInitial
+    ]; 
+    const homeFinal = [
+      ...homeAttackFinal, ...homeDefendFinal
+    ];
+
+    // We'll label them as below
+    const zoneCategoriesHome = [
+      "A-Buildup","A-Midfield","A-Wingplay","A-LastThird",
+      "D-Buildup","D-Midfield","D-Wingplay","D-LastThird"
+    ];
+
+    new ApexCharts(document.querySelector("#homeZonesChart"), {
       chart: {
-        type: "treemap",
-        height: "100%"
+        height: 400,
+        type: "bar"
       },
+      // Series[0] => bars (initial)
+      // Series[1] => markers (final)
       series: [
         {
-          name: "Home Attacking",
-          data: homeAttack // 4 rects: buildup, midfield, wingplay, last third
+          name: "Home (Initial)",
+          type: "bar",
+          data: homeInitial
         },
         {
-          name: "Away Attacking",
-          data: awayAttack
+          name: "Home (Final)",
+          type: "scatter", // marker-only
+          data: homeFinal
         }
       ],
-      title: {
-        text: "Attacking Treemap",
-        align: "center",
-        style: { fontFamily: "Inter", fontWeight: "700", fontSize: "16px" }
+      xaxis: {
+        categories: zoneCategoriesHome
       },
-      legend: {
-        position: "top",
-        fontSize: "14px"
+      yaxis: {
+        title: { text: "Home Zones" }
       },
-      colors: [HOME_COLOR, AWAY_COLOR], 
       plotOptions: {
-        treemap: {
-          distributed: false, // each series has its own color
-          enableShades: true,
-          shadeIntensity: 0.4
+        bar: {
+          columnWidth: "50%"
         }
       },
-      dataLabels: {
-        enabled: true,
-        style: {
-          fontSize: "14px",
-          fontFamily: "Inter",
-          fontWeight: "700"
-        },
-        formatter: function(text, opt) {
-          // text is the "x" (zone name),
-          // opt.value is the "y" (numeric value)
-          return text + "\n" + opt.value;
-        }
+      markers: {
+        size: 8, // marker radius
+        shape: "circle",
+        strokeColors: "#fff",
+        strokeWidth: 2
+      },
+      colors: [HOME_COLOR, HOME_COLOR], // same color, but one is bar, one is marker
+      legend: {
+        position: "top"
+      },
+      title: {
+        text: "Home Attacking & Defending (Zones)",
+        align: "center",
+        style: { fontWeight: "700", fontSize: "16px", fontFamily: "Inter" }
       }
     }).render();
 
-    // 2) DEFENDING
-    new ApexCharts(document.querySelector("#treemapDefending"), {
+
+    // AWAY
+    const awayAttackInitial = [
+      numParam("away_attack_initial_buildup"),
+      numParam("away_attack_initial_midfield"),
+      numParam("away_attack_initial_wingplay"),
+      numParam("away_attack_initial_lastthird")
+    ];
+    const awayAttackFinal = [
+      numParam("away_attack_final_buildup"),
+      numParam("away_attack_final_midfield"),
+      numParam("away_attack_final_wingplay"),
+      numParam("away_attack_final_lastthird")
+    ];
+
+    const awayDefendInitial = [
+      numParam("away_defend_initial_buildup"),
+      numParam("away_defend_initial_midfield"),
+      numParam("away_defend_initial_wingplay"),
+      numParam("away_defend_initial_lastthird")
+    ];
+    const awayDefendFinal = [
+      numParam("away_defend_final_buildup"),
+      numParam("away_defend_final_midfield"),
+      numParam("away_defend_final_wingplay"),
+      numParam("away_defend_final_lastthird")
+    ];
+
+    const awayInitial = [
+      ...awayAttackInitial, ...awayDefendInitial
+    ];
+    const awayFinal = [
+      ...awayAttackFinal, ...awayDefendFinal
+    ];
+
+    const zoneCategoriesAway = [
+      "A-Buildup","A-Midfield","A-Wingplay","A-LastThird",
+      "D-Buildup","D-Midfield","D-Wingplay","D-LastThird"
+    ];
+
+    new ApexCharts(document.querySelector("#awayZonesChart"), {
       chart: {
-        type: "treemap",
-        height: "100%"
+        height: 400,
+        type: "bar"
       },
       series: [
         {
-          name: "Home Defending",
-          data: homeDefend
+          name: "Away (Initial)",
+          type: "bar",
+          data: awayInitial
         },
         {
-          name: "Away Defending",
-          data: awayDefend
+          name: "Away (Final)",
+          type: "scatter",
+          data: awayFinal
         }
       ],
-      title: {
-        text: "Defending Treemap",
-        align: "center",
-        style: { fontFamily: "Inter", fontWeight: "700", fontSize: "16px" }
+      xaxis: {
+        categories: zoneCategoriesAway
       },
-      legend: {
-        position: "top",
-        fontSize: "14px"
+      yaxis: {
+        title: { text: "Away Zones" }
       },
-      colors: [HOME_COLOR, AWAY_COLOR],
       plotOptions: {
-        treemap: {
-          distributed: false,
-          enableShades: true,
-          shadeIntensity: 0.4
+        bar: {
+          columnWidth: "50%"
         }
       },
-      dataLabels: {
-        enabled: true,
-        style: {
-          fontSize: "14px",
-          fontFamily: "Inter",
-          fontWeight: "700"
-        },
-        formatter: function(text, opt) {
-          return text + "\n" + opt.value;
-        }
+      markers: {
+        size: 8,
+        shape: "circle",
+        strokeColors: "#fff",
+        strokeWidth: 2
+      },
+      colors: [AWAY_COLOR, AWAY_COLOR],
+      legend: {
+        position: "top"
+      },
+      title: {
+        text: "Away Attacking & Defending (Zones)",
+        align: "center",
+        style: { fontWeight: "700", fontSize: "16px", fontFamily: "Inter" }
       }
     }).render();
 
-    // A small timeout to ensure the layout flows properly
+
+    // A small timeout to ensure final layout is correct
     setTimeout(() => {
       window.dispatchEvent(new Event("resize"));
     }, 100);
