@@ -40,22 +40,14 @@
       min-height: 400px;
     }
 
-    /* Polar Charts styling */
-    .polar-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 20px;
+    /* Treemap containers */
+    #treemapAttacking, #treemapDefending {
+      width: 100%;
+      height: 450px; /* Adjust as needed */
+      margin: auto;
+      min-width: 320px;
     }
-    .polar-chart-box {
-      flex: 1 1 400px;
-      max-width: 400px;
-      background: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
+
   </style>
 </head>
 <body>
@@ -75,33 +67,27 @@
     <div id="possessionChart"></div>
   </div>
 
-  <!-- 4) Polar-Area Charts (Zone Strength) -->
+  <!-- 4) Treemap Charts (Attacking & Defending) -->
   <div class="chart-container">
-    <h2 style="margin-bottom: 10px;">Zone Strengths (Polar Charts)</h2>
-    <div class="polar-grid">
-      <div class="polar-chart-box">
-        <div id="polarHomeAttack"></div>
-      </div>
-      <div class="polar-chart-box">
-        <div id="polarHomeDefend"></div>
-      </div>
-      <div class="polar-chart-box">
-        <div id="polarAwayAttack"></div>
-      </div>
-      <div class="polar-chart-box">
-        <div id="polarAwayDefend"></div>
-      </div>
-    </div>
+    <h2 style="margin-bottom: 10px;">Attacking Zones (Treemap)</h2>
+    <div id="treemapAttacking"></div>
+  </div>
+  <div class="chart-container">
+    <h2 style="margin-bottom: 10px;">Defending Zones (Treemap)</h2>
+    <div id="treemapDefending"></div>
   </div>
 
   <script>
     /*************************************************************
      * 1) GLOBAL COLORS & PARSING
      *************************************************************/
-    // We'll use the same RED & DARK GRAY for Home/Away across all charts
-    const HOME_COLOR = "#fa3048"; 
+    // We'll stay consistent with your existing scheme:
+    // - RED / DARK GRAY for Home/Away in stats/momentum
+    const HOME_COLOR = "#fa3048";
     const AWAY_COLOR = "#2c2c2c";
 
+    // For the two-sided bar chart
+    // (We reuse HOME_COLOR & AWAY_COLOR so it’s consistent across all charts)
     const params = new URLSearchParams(window.location.search);
 
     function numParam(name, defaultVal = 0) {
@@ -148,35 +134,33 @@
     const possessionHome = numParam("possessionHome", 50);
     const possessionAway = numParam("possessionAway", 50);
 
-    // 4) Zone Strength (Polar)
-    const zoneLabels = ["Buildup", "Midfield", "Wingplay", "Last Third"];
-    const homeAttackData = [
-      numParam("home_attack_buildup"),
-      numParam("home_attack_midfield"),
-      numParam("home_attack_wingplay"),
-      numParam("home_attack_lastthird")
+    // 4) Zone Strength for Treemap
+    // We'll store attacking & defending for both home & away
+    const homeAttack = [
+      { x: "Buildup",   y: numParam("home_attack_buildup")   },
+      { x: "Midfield",  y: numParam("home_attack_midfield")  },
+      { x: "Wingplay",  y: numParam("home_attack_wingplay")  },
+      { x: "Last Third",y: numParam("home_attack_lastthird") }
     ];
-    const homeDefendData = [
-      numParam("home_defend_buildup"),
-      numParam("home_defend_midfield"),
-      numParam("home_defend_wingplay"),
-      numParam("home_defend_lastthird")
-    ];
-    const awayAttackData = [
-      numParam("away_attack_buildup"),
-      numParam("away_attack_midfield"),
-      numParam("away_attack_wingplay"),
-      numParam("away_attack_lastthird")
-    ];
-    const awayDefendData = [
-      numParam("away_defend_buildup"),
-      numParam("away_defend_midfield"),
-      numParam("away_defend_wingplay"),
-      numParam("away_defend_lastthird")
+    const awayAttack = [
+      { x: "Buildup",   y: numParam("away_attack_buildup")   },
+      { x: "Midfield",  y: numParam("away_attack_midfield")  },
+      { x: "Wingplay",  y: numParam("away_attack_wingplay")  },
+      { x: "Last Third",y: numParam("away_attack_lastthird") }
     ];
 
-    // We'll define a color set for the 4 slices in the Polar charts
-    const ZONE_COLORS = ["#008FFB", "#00E396", "#FEB019", "#FF4560"];
+    const homeDefend = [
+      { x: "Buildup",   y: numParam("home_defend_buildup")   },
+      { x: "Midfield",  y: numParam("home_defend_midfield")  },
+      { x: "Wingplay",  y: numParam("home_defend_wingplay")  },
+      { x: "Last Third",y: numParam("home_defend_lastthird") }
+    ];
+    const awayDefend = [
+      { x: "Buildup",   y: numParam("away_defend_buildup")   },
+      { x: "Midfield",  y: numParam("away_defend_midfield")  },
+      { x: "Wingplay",  y: numParam("away_defend_wingplay")  },
+      { x: "Last Third",y: numParam("away_defend_lastthird") }
+    ];
 
 
     /*************************************************************
@@ -224,7 +208,7 @@
           fontWeight: "700"
         }
       },
-      colors: [HOME_COLOR, AWAY_COLOR], // RED vs. DARK GRAY
+      colors: [HOME_COLOR, AWAY_COLOR],
       title: {
         text: "Match Stats",
         align: "center",
@@ -333,68 +317,116 @@
 
 
     /*************************************************************
-     * D) POLAR-AREA CHARTS (Zone Strength)
+     * D) TREEMAP CHARTS (Attacking & Defending)
+     *
+     * We'll create:
+     *   - #treemapAttacking with 2 series: 
+     *       1) "Home Attacking" -> homeAttack
+     *       2) "Away Attacking" -> awayAttack
+     *   - #treemapDefending with 2 series:
+     *       1) "Home Defending" -> homeDefend
+     *       2) "Away Defending" -> awayDefend
      *************************************************************/
-    // Home Attacking
-    new ApexCharts(document.querySelector("#polarHomeAttack"), {
-      chart: { type: "polarArea", height: 350 },
-      series: homeAttackData,
-      labels: zoneLabels,
-      colors: ZONE_COLORS,
-      title: { text: "Home Attacking", align: "center" },
-      legend: { position: "bottom" },
-      stroke: { colors: ["#fff"], width: 2 },
-      fill: { opacity: 0.85 },
-      yaxis: { show: false },
-      noData: { text: "No Data" }
+
+    // 1) ATTACKING
+    new ApexCharts(document.querySelector("#treemapAttacking"), {
+      chart: {
+        type: "treemap",
+        height: "100%"
+      },
+      series: [
+        {
+          name: "Home Attacking",
+          data: homeAttack // 4 rects: buildup, midfield, wingplay, last third
+        },
+        {
+          name: "Away Attacking",
+          data: awayAttack
+        }
+      ],
+      title: {
+        text: "Attacking Treemap",
+        align: "center",
+        style: { fontFamily: "Inter", fontWeight: "700", fontSize: "16px" }
+      },
+      legend: {
+        position: "top",
+        fontSize: "14px"
+      },
+      colors: [HOME_COLOR, AWAY_COLOR], 
+      plotOptions: {
+        treemap: {
+          distributed: false, // each series has its own color
+          enableShades: true,
+          shadeIntensity: 0.4
+        }
+      },
+      dataLabels: {
+        enabled: true,
+        style: {
+          fontSize: "14px",
+          fontFamily: "Inter",
+          fontWeight: "700"
+        },
+        formatter: function(text, opt) {
+          // text is the "x" (zone name),
+          // opt.value is the "y" (numeric value)
+          return text + "\n" + opt.value;
+        }
+      }
     }).render();
 
-    // Home Defending
-    new ApexCharts(document.querySelector("#polarHomeDefend"), {
-      chart: { type: "polarArea", height: 350 },
-      series: homeDefendData,
-      labels: zoneLabels,
-      colors: ZONE_COLORS,
-      title: { text: "Home Defending", align: "center" },
-      legend: { position: "bottom" },
-      stroke: { colors: ["#fff"], width: 2 },
-      fill: { opacity: 0.85 },
-      yaxis: { show: false },
-      noData: { text: "No Data" }
-    }).render();
-
-    // Away Attacking
-    new ApexCharts(document.querySelector("#polarAwayAttack"), {
-      chart: { type: "polarArea", height: 350 },
-      series: awayAttackData,
-      labels: zoneLabels,
-      colors: ZONE_COLORS,
-      title: { text: "Away Attacking", align: "center" },
-      legend: { position: "bottom" },
-      stroke: { colors: ["#fff"], width: 2 },
-      fill: { opacity: 0.85 },
-      yaxis: { show: false },
-      noData: { text: "No Data" }
-    }).render();
-
-    // Away Defending
-    new ApexCharts(document.querySelector("#polarAwayDefend"), {
-      chart: { type: "polarArea", height: 350 },
-      series: awayDefendData,
-      labels: zoneLabels,
-      colors: ZONE_COLORS,
-      title: { text: "Away Defending", align: "center" },
-      legend: { position: "bottom" },
-      stroke: { colors: ["#fff"], width: 2 },
-      fill: { opacity: 0.85 },
-      yaxis: { show: false },
-      noData: { text: "No Data" }
+    // 2) DEFENDING
+    new ApexCharts(document.querySelector("#treemapDefending"), {
+      chart: {
+        type: "treemap",
+        height: "100%"
+      },
+      series: [
+        {
+          name: "Home Defending",
+          data: homeDefend
+        },
+        {
+          name: "Away Defending",
+          data: awayDefend
+        }
+      ],
+      title: {
+        text: "Defending Treemap",
+        align: "center",
+        style: { fontFamily: "Inter", fontWeight: "700", fontSize: "16px" }
+      },
+      legend: {
+        position: "top",
+        fontSize: "14px"
+      },
+      colors: [HOME_COLOR, AWAY_COLOR],
+      plotOptions: {
+        treemap: {
+          distributed: false,
+          enableShades: true,
+          shadeIntensity: 0.4
+        }
+      },
+      dataLabels: {
+        enabled: true,
+        style: {
+          fontSize: "14px",
+          fontFamily: "Inter",
+          fontWeight: "700"
+        },
+        formatter: function(text, opt) {
+          return text + "\n" + opt.value;
+        }
+      }
     }).render();
 
     // A small timeout to ensure the layout flows properly
     setTimeout(() => {
       window.dispatchEvent(new Event("resize"));
     }, 100);
+
   </script>
 </body>
 </html>
