@@ -23,10 +23,10 @@
       width: 90vw;
       max-width: 1000px;
       margin: 40px auto;
-      background: #212121;
+      background: #ffffff; /* White background for contrast */
       border-radius: 8px;
       padding: 20px 20px 30px 20px;
-      box-shadow: 0 1px 4px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
     .chart-grid {
       display: grid;
@@ -61,10 +61,10 @@
     /*************************************************************
      * GLOBAL COLORS
      *************************************************************/
-    const HOME_ATTACK_COLOR = "#fa3048";  // Red for Home Attack
-    const HOME_DEFEND_COLOR = "#a10b2f";  // Darker Red for Home Defense
-    const AWAY_ATTACK_COLOR = "#B0B0B0";  // Gray for Away Attack
-    const AWAY_DEFEND_COLOR = "#1a1a1a";  // Dark Gray for Away Defense
+    const HOME_ATTACK_COLOR = "#fa3048";  // Bright Red for Home Attack
+    const HOME_DEFEND_COLOR = "#b22222";  // Darker Red for Home Defense
+    const AWAY_ATTACK_COLOR = "#505050";  // Dark Gray for Away Attack
+    const AWAY_DEFEND_COLOR = "#808080";  // Lighter Gray for Away Defense
 
     const params = new URLSearchParams(window.location.search);
 
@@ -98,26 +98,33 @@
      *************************************************************/
     function createSlopeChart(elementId, title, dataSeries, colors) {
       new ApexCharts(document.querySelector(`#${elementId}`), {
-        chart: { type: "line", height: 250, background: "#212121", toolbar: { show: false } },
+        chart: { type: "line", height: 250, background: "#ffffff", toolbar: { show: false } },
         series: [
-          { name: "Initial-Final", data: dataSeries[0] },
-          { name: "Initial-Final", data: dataSeries[1] }
+          { name: "Attack", data: dataSeries[0] },
+          { name: "Defense", data: dataSeries[1] }
         ],
         xaxis: {
           categories: categories,
-          labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } }
+          labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
         },
         yaxis: {
-          labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } }
+          labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
         },
-        stroke: { width: 3, curve: "smooth" },
+        stroke: { width: 4, curve: "smooth" }, // Thicker stroke for visibility
         colors: colors,
         title: {
           text: title,
           align: "center",
-          style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
+          style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#000000" }
         },
-        legend: { show: false }
+        tooltip: {
+          theme: "light", // Makes tooltip background white
+          style: { color: "#000000" } // Ensures black text in tooltip
+        },
+        legend: {
+          position: "top",
+          labels: { colors: "#000000" } // Black text for legend
+        }
       }).render();
     }
 
