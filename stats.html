@@ -13,7 +13,8 @@
       margin: 0;
       padding: 0;
       font-family: "Inter", sans-serif;
-      background: #f8f8f8;
+      background: #121212; /* Dark theme */
+      color: #E0E0E0; /* Light text */
       text-align: center;
       height: 100vh;
       overflow: hidden; /* Prevent scrolling */
@@ -22,10 +23,10 @@
       width: 90vw;
       max-width: 900px;
       margin: 50px auto;
-      background: #fff;
+      background: #1E1E1E; /* Dark gray container */
       border-radius: 8px;
       padding: 20px 20px 30px 20px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 4px rgba(255, 255, 255, 0.1);
     }
   </style>
 </head>
@@ -65,37 +66,54 @@
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
 
-    const homeStatsNeg = homeStats.map(v => -v);
+    const homeStatsNeg = homeStats.map(v => v === 0 ? 0 : -Math.abs(v));
     const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
 
     new ApexCharts(document.querySelector("#statsChart"), {
-      chart: { type: "bar", height: 400 },
+      chart: { 
+        type: "bar", 
+        height: 400, 
+        background: "#1E1E1E"  /* Dark background */
+      },
       series: [
         { name: "Home", data: homeStatsNeg },
         { name: "Away", data: awayStats }
       ],
       xaxis: {
         categories: statLabels,
-        labels: { formatter: (val) => Math.abs(val).toString() },
+        labels: { 
+          formatter: (val) => Math.abs(val).toString(),
+          style: { color: "#E0E0E0", fontSize: "12px" } /* Light text */
+        },
         min: -maxVal,
         max: maxVal
       },
-      yaxis: { reversed: true },
+      yaxis: { 
+        reversed: true,
+        labels: { style: { color: "#E0E0E0", fontSize: "12px" } } /* Light text */
+      },
       plotOptions: {
-        bar: { horizontal: true, barHeight: "60%", dataLabels: { position: "center" } }
+        bar: { 
+          horizontal: true, 
+          barHeight: "60%", 
+          dataLabels: { position: "center" } 
+        }
       },
       dataLabels: {
         enabled: true,
         formatter: (val) => Math.abs(val),
-        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700" }
+        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700", color: "#E0E0E0" } /* Light text */
       },
-      colors: ["#fa3048", "#2c2c2c"],
+      colors: ["#fa3048", "#B0B0B0"], /* Red for home, Gray for away */
       title: {
         text: "Match Stats",
         align: "center",
-        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#E0E0E0" } /* Light text */
       },
-      legend: { position: "top" }
+      legend: { 
+        position: "top", 
+        labels: { colors: "#E0E0E0" } /* Light text for legend */
+      }
     }).render();
   </script>
 
