@@ -56,7 +56,9 @@
     /*************************************************************
      * PARSE ZONE VALUES
      *************************************************************/
-    const categories = ["Buildup", "Midfield", "Wingplay", "Last Third"];
+    const categories = [
+      "Buildup", "Midfield", "Wingplay", "Last Third"
+    ];
 
     const homeAttackInitial = [
       numParam("home_attack_initial_buildup"),
@@ -120,11 +122,45 @@
     new ApexCharts(document.querySelector("#zonesChart"), {
       chart: { type: "bar", height: 400, background: "#212121", stacked: false },
       series: [
-        { name: "Home Attack (Initial)", data: homeAttackInitial, color: HOME_COLOR },
-        { name: "Home Attack (Final)", data: homeAttackFinal, color: "#ff6b81" },  // Lighter red
-        { name: "Home Defend (Initial)", data: homeDefendInitial, color: HOME_DEFEND_COLOR },
-        { name: "Home Defend (Final)", data: homeDefendFinal, color: "#d1345b" },  // Lighter defend red
-        { name: "Away Attack (Initial)", data: awayAttackInitial, color: AWAY_COLOR },
-        { name: "Away Attack (Final)", data: awayAttackFinal, color: "#d3d3d3" },  // Lighter gray
-        { name: "Away Defend (Initial)", data: awayDefendInitial, color: AWAY_DEFEND_COLOR },
-        { name: "Away Defend (Final
+        { name: "Home Attack (Initial)", data: homeAttackInitial },
+        { name: "Home Attack (Final)", data: homeAttackFinal },
+        { name: "Home Defend (Initial)", data: homeDefendInitial },
+        { name: "Home Defend (Final)", data: homeDefendFinal },
+        { name: "Away Attack (Initial)", data: awayAttackInitial },
+        { name: "Away Attack (Final)", data: awayAttackFinal },
+        { name: "Away Defend (Initial)", data: awayDefendInitial },
+        { name: "Away Defend (Final)", data: awayDefendFinal }
+      ],
+      xaxis: {
+        categories: categories,
+        labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } }
+      },
+      yaxis: { 
+        labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } } 
+      },
+      plotOptions: {
+        bar: { horizontal: false, columnWidth: "60%", distributed: true }
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: (val) => val.toFixed(0),
+        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
+      },
+      colors: [
+        HOME_COLOR, "#ff6b81", HOME_DEFEND_COLOR, "#d1345b",
+        AWAY_COLOR, "#d3d3d3", AWAY_DEFEND_COLOR, "#636363"
+      ],
+      title: {
+        text: "Zone Influence: Initial vs. Final",
+        align: "center",
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
+      },
+      legend: { 
+        position: "top", 
+        labels: { colors: "#FFFFFF" } 
+      }
+    }).render();
+  </script>
+
+</body>
+</html>
