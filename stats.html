@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Match Stats</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", sans-serif;
+      background: #f8f8f8;
+      text-align: center;
+      height: 100vh;
+      overflow: hidden; /* Prevent scrolling */
+    }
+    .chart-container {
+      width: 90vw;
+      max-width: 900px;
+      margin: 50px auto;
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px 20px 30px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Match Stats Chart -->
+  <div class="chart-container">
+    <div id="statsChart"></div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    
+    function numParam(name, defaultVal = 0) {
+      const val = params.get(name);
+      return val ? Number(val) : defaultVal;
+    }
+
+    const homeStats = [
+      numParam("home_shots"), numParam("home_shots_on_goal"),
+      numParam("home_goal_chances"), numParam("home_duels_won"),
+      numParam("home_saves"), numParam("home_corners"),
+      numParam("home_fouls"), numParam("home_yellows"),
+      numParam("home_reds")
+    ];
+    
+    const awayStats = [
+      numParam("away_shots"), numParam("away_shots_on_goal"),
+      numParam("away_goal_chances"), numParam("away_duels_won"),
+      numParam("away_saves"), numParam("away_corners"),
+      numParam("away_fouls"), numParam("away_yellows"),
+      numParam("away_reds")
+    ];
+    
+    const statLabels = [
+      "Shots", "Shots on Goal", "Goal Chances", "Duels Won",
+      "Saves", "Corners", "Fouls", "Yellows", "Reds"
+    ];
+
+    const homeStatsNeg = homeStats.map(v => -v);
+    const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
+
+    new ApexCharts(document.querySelector("#statsChart"), {
+      chart: { type: "bar", height: 400 },
+      series: [
+        { name: "Home", data: homeStatsNeg },
+        { name: "Away", data: awayStats }
+      ],
+      xaxis: {
+        categories: statLabels,
+        labels: { formatter: (val) => Math.abs(val).toString() },
+        min: -maxVal,
+        max: maxVal
+      },
+      yaxis: { reversed: true },
+      plotOptions: {
+        bar: { horizontal: true, barHeight: "60%", dataLabels: { position: "center" } }
+      },
+      dataLabels: {
+        enabled: true,
+        formatter: (val) => Math.abs(val),
+        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700" }
+      },
+      colors: ["#fa3048", "#2c2c2c"],
+      title: {
+        text: "Match Stats",
+        align: "center",
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700" }
+      },
+      legend: { position: "top" }
+    }).render();
+  </script>
+
+</body>
+</html>
