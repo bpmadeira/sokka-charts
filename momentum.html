@@ -53,9 +53,6 @@
     const homeMomentumData = rawMomentum.split(",").map(x => +x.trim());
     const awayMomentumData = homeMomentumData.map(v => 1 - v);
 
-    // Ensure labels only appear at 0, 45, and 90
-    const sparseLabels = timeData.map((val) => (val === 0 || val === 45 || val === 90) ? val : "");
-
     new ApexCharts(document.querySelector("#momentumChart"), {
       chart: { 
         type: "line", 
@@ -70,9 +67,9 @@
       ],
       xaxis: {
         categories: timeData,
-        tickAmount: 2, // Reduce number of displayed ticks
+        tickAmount: 3, // Ensures 0, 45, and 90 are chosen
         labels: { 
-          formatter: (val, index) => sparseLabels[index], 
+          formatter: (val) => (val === 0 || val === 45 || val === 90) ? val : "", 
           style: { color: "#FFFFFF", fontFamily: "Inter", fontWeight: "700" } 
         },
         title: { text: "Time (minutes)", style: { color: "#FFFFFF", fontFamily: "Inter", fontWeight: "700" } }
