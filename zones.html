@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Zones Chart</title>
+  <title>Zones Influence - Slope Charts</title>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,13 +17,13 @@
       color: #E0E0E0; /* White text for readability */
       text-align: center;
       height: 100vh;
-      overflow: hidden; /* Prevent scrolling */
+      overflow-y: auto; /* Allow scrolling */
     }
     .chart-container {
       width: 90vw;
-      max-width: 900px;
-      margin: 50px auto;
-      background: #212121; /* Dark gray container */
+      max-width: 1000px;
+      margin: 40px auto;
+      background: #212121;
       border-radius: 8px;
       padding: 20px 20px 30px 20px;
       box-shadow: 0 1px 4px rgba(255, 255, 255, 0.1);
@@ -32,135 +32,18 @@
 </head>
 <body>
 
-  <!-- Zones Chart -->
+  <h2>Zones Influence - Home Team</h2>
   <div class="chart-container">
-    <div id="zonesChart"></div>
+    <div id="homeZonesChart"></div>
+  </div>
+
+  <h2>Zones Influence - Away Team</h2>
+  <div class="chart-container">
+    <div id="awayZonesChart"></div>
   </div>
 
   <script>
     /*************************************************************
      * GLOBAL COLORS
      *************************************************************/
-    const HOME_COLOR = "#fa3048";  // Red for Home Team
-    const AWAY_COLOR = "#B0B0B0";  // Gray for Away Team
-    const HOME_DEFEND_COLOR = "#a10b2f";  
-    const AWAY_DEFEND_COLOR = "#1a1a1a";
-
-    const params = new URLSearchParams(window.location.search);
-
-    function numParam(name, defaultVal = 0) {
-      const val = params.get(name);
-      return val ? Number(val) : defaultVal;
-    }
-
-    /*************************************************************
-     * PARSE ZONE VALUES
-     *************************************************************/
-    const categories = [
-      "Buildup", "Midfield", "Wingplay", "Last Third"
-    ];
-
-    const homeAttackInitial = [
-      numParam("home_attack_initial_buildup"),
-      numParam("home_attack_initial_midfield"),
-      numParam("home_attack_initial_wingplay"),
-      numParam("home_attack_initial_lastthird")
-    ];
-
-    const homeAttackFinal = [
-      numParam("home_attack_final_buildup"),
-      numParam("home_attack_final_midfield"),
-      numParam("home_attack_final_wingplay"),
-      numParam("home_attack_final_lastthird")
-    ];
-
-    const homeDefendInitial = [
-      numParam("home_defend_initial_buildup"),
-      numParam("home_defend_initial_midfield"),
-      numParam("home_defend_initial_wingplay"),
-      numParam("home_defend_initial_lastthird")
-    ];
-
-    const homeDefendFinal = [
-      numParam("home_defend_final_buildup"),
-      numParam("home_defend_final_midfield"),
-      numParam("home_defend_final_wingplay"),
-      numParam("home_defend_final_lastthird")
-    ];
-
-    const awayAttackInitial = [
-      numParam("away_attack_initial_buildup"),
-      numParam("away_attack_initial_midfield"),
-      numParam("away_attack_initial_wingplay"),
-      numParam("away_attack_initial_lastthird")
-    ];
-
-    const awayAttackFinal = [
-      numParam("away_attack_final_buildup"),
-      numParam("away_attack_final_midfield"),
-      numParam("away_attack_final_wingplay"),
-      numParam("away_attack_final_lastthird")
-    ];
-
-    const awayDefendInitial = [
-      numParam("away_defend_initial_buildup"),
-      numParam("away_defend_initial_midfield"),
-      numParam("away_defend_initial_wingplay"),
-      numParam("away_defend_initial_lastthird")
-    ];
-
-    const awayDefendFinal = [
-      numParam("away_defend_final_buildup"),
-      numParam("away_defend_final_midfield"),
-      numParam("away_defend_final_wingplay"),
-      numParam("away_defend_final_lastthird")
-    ];
-
-    /*************************************************************
-     * RENDER ZONES CHART
-     *************************************************************/
-    new ApexCharts(document.querySelector("#zonesChart"), {
-      chart: { type: "bar", height: 400, background: "#212121", stacked: false },
-      series: [
-        { name: "Home Attack (Initial)", data: homeAttackInitial },
-        { name: "Home Attack (Final)", data: homeAttackFinal },
-        { name: "Home Defend (Initial)", data: homeDefendInitial },
-        { name: "Home Defend (Final)", data: homeDefendFinal },
-        { name: "Away Attack (Initial)", data: awayAttackInitial },
-        { name: "Away Attack (Final)", data: awayAttackFinal },
-        { name: "Away Defend (Initial)", data: awayDefendInitial },
-        { name: "Away Defend (Final)", data: awayDefendFinal }
-      ],
-      xaxis: {
-        categories: categories,
-        labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } }
-      },
-      yaxis: { 
-        labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } } 
-      },
-      plotOptions: {
-        bar: { horizontal: false, columnWidth: "60%", distributed: true }
-      },
-      dataLabels: {
-        enabled: true,
-        formatter: (val) => val.toFixed(0),
-        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
-      },
-      colors: [
-        HOME_COLOR, "#ff6b81", HOME_DEFEND_COLOR, "#d1345b",
-        AWAY_COLOR, "#d3d3d3", AWAY_DEFEND_COLOR, "#636363"
-      ],
-      title: {
-        text: "Zone Influence: Initial vs. Final",
-        align: "center",
-        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
-      },
-      legend: { 
-        position: "top", 
-        labels: { colors: "#FFFFFF" } 
-      }
-    }).render();
-  </script>
-
-</body>
-</html>
+    const HOME_ATTACK_COLOR = "#fa3048
