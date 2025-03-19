@@ -13,8 +13,8 @@
       margin: 0;
       padding: 0;
       font-family: "Inter", sans-serif;
-      background: #121212; /* Dark theme */
-      color: #E0E0E0; /* Light text */
+      background: #212121; /* Dark theme */
+      color: #E0E0E0; /* White text for readability */
       text-align: center;
       height: 100vh;
       overflow: hidden; /* Prevent scrolling */
@@ -38,6 +38,12 @@
   </div>
 
   <script>
+    /*************************************************************
+     * GLOBAL COLORS
+     *************************************************************/
+    const HOME_COLOR = "#fa3048";  // Red for Home Team
+    const AWAY_COLOR = "#B0B0B0";  // Gray for Away Team
+
     const params = new URLSearchParams(window.location.search);
     
     function numParam(name, defaultVal = 0) {
@@ -73,7 +79,7 @@
       chart: { 
         type: "bar", 
         height: 400, 
-        background: "#1E1E1E"  /* Dark background */
+        background: "#212121"  /* Dark background */
       },
       series: [
         { name: "Home", data: homeStatsNeg },
@@ -82,15 +88,16 @@
       xaxis: {
         categories: statLabels,
         labels: { 
-          formatter: (val) => Math.abs(val).toString(),
-          style: { color: "#E0E0E0", fontSize: "12px" } /* Light text */
+          show: false  /* Hide X-axis numbers */
         },
         min: -maxVal,
         max: maxVal
       },
       yaxis: { 
         reversed: true,
-        labels: { style: { color: "#E0E0E0", fontSize: "12px" } } /* Light text */
+        labels: { 
+          style: { color: "#FFFFFF", fontSize: "14px", fontWeight: "700" } /* White labels */
+        }
       },
       plotOptions: {
         bar: { 
@@ -102,17 +109,17 @@
       dataLabels: {
         enabled: true,
         formatter: (val) => Math.abs(val),
-        style: { fontSize: "12px", fontFamily: "Inter", fontWeight: "700", color: "#E0E0E0" } /* Light text */
+        style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" } /* White text */
       },
-      colors: ["#fa3048", "#B0B0B0"], /* Red for home, Gray for away */
+      colors: [HOME_COLOR, AWAY_COLOR], /* Red for home, Gray for away */
       title: {
         text: "Match Stats",
         align: "center",
-        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#E0E0E0" } /* Light text */
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" } /* White text */
       },
       legend: { 
         position: "top", 
-        labels: { colors: "#E0E0E0" } /* Light text for legend */
+        labels: { colors: "#FFFFFF" } /* White text for legend */
       }
     }).render();
   </script>
