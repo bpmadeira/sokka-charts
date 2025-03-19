@@ -28,22 +28,113 @@
       padding: 20px 20px 30px 20px;
       box-shadow: 0 1px 4px rgba(255, 255, 255, 0.1);
     }
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
   </style>
 </head>
 <body>
 
   <h2>Zones Influence - Home Team</h2>
   <div class="chart-container">
-    <div id="homeZonesChart"></div>
+    <div class="chart-grid">
+      <div id="homeBuildup"></div>
+      <div id="homeMidfield"></div>
+      <div id="homeWingplay"></div>
+      <div id="homeLastThird"></div>
+    </div>
   </div>
 
   <h2>Zones Influence - Away Team</h2>
   <div class="chart-container">
-    <div id="awayZonesChart"></div>
+    <div class="chart-grid">
+      <div id="awayBuildup"></div>
+      <div id="awayMidfield"></div>
+      <div id="awayWingplay"></div>
+      <div id="awayLastThird"></div>
+    </div>
   </div>
 
   <script>
     /*************************************************************
      * GLOBAL COLORS
      *************************************************************/
-    const HOME_ATTACK_COLOR = "#fa3048
+    const HOME_ATTACK_COLOR = "#fa3048";  // Red for Home Attack
+    const HOME_DEFEND_COLOR = "#a10b2f";  // Darker Red for Home Defense
+    const AWAY_ATTACK_COLOR = "#B0B0B0";  // Gray for Away Attack
+    const AWAY_DEFEND_COLOR = "#1a1a1a";  // Dark Gray for Away Defense
+
+    const params = new URLSearchParams(window.location.search);
+
+    function numParam(name, defaultVal = 0) {
+      const val = params.get(name);
+      return val ? Number(val) : defaultVal;
+    }
+
+    /*************************************************************
+     * PARSE ZONE VALUES
+     *************************************************************/
+    const zones = ["Buildup", "Midfield", "Wingplay", "Last Third"];
+    const categories = ["Initial", "Final"];
+
+    function getZoneValues(prefix) {
+      return [
+        [numParam(`${prefix}_initial_buildup`), numParam(`${prefix}_final_buildup`)],
+        [numParam(`${prefix}_initial_midfield`), numParam(`${prefix}_final_midfield`)],
+        [numParam(`${prefix}_initial_wingplay`), numParam(`${prefix}_final_wingplay`)],
+        [numParam(`${prefix}_initial_lastthird`), numParam(`${prefix}_final_lastthird`)]
+      ];
+    }
+
+    const homeAttack = getZoneValues("home_attack");
+    const homeDefense = getZoneValues("home_defend");
+    const awayAttack = getZoneValues("away_attack");
+    const awayDefense = getZoneValues("away_defend");
+
+    /*************************************************************
+     * CHART CONFIGURATION FUNCTION (SLOPE CHART)
+     *************************************************************/
+    function createSlopeChart(elementId, title, dataSeries, colors) {
+      new ApexCharts(document.querySelector(`#${elementId}`), {
+        chart: { type: "line", height: 250, background: "#212121", toolbar: { show: false } },
+        series: [
+          { name: "Initial-Final", data: dataSeries[0] },
+          { name: "Initial-Final", data: dataSeries[1] }
+        ],
+        xaxis: {
+          categories: categories,
+          labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } }
+        },
+        yaxis: {
+          labels: { style: { color: "#FFFFFF", fontSize: "12px", fontWeight: "700" } }
+        },
+        stroke: { width: 3, curve: "smooth" },
+        colors: colors,
+        title: {
+          text: title,
+          align: "center",
+          style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
+        },
+        legend: { show: false }
+      }).render();
+    }
+
+    /*************************************************************
+     * RENDER SLOPE CHARTS
+     *************************************************************/
+    createSlopeChart("homeBuildup", "Home Buildup", [homeAttack[0], homeDefense[0]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
+    createSlopeChart("homeMidfield", "Home Midfield", [homeAttack[1], homeDefense[1]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
+    createSlopeChart("homeWingplay", "Home Wingplay", [homeAttack[2], homeDefense[2]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
+    createSlopeChart("homeLastThird", "Home Last Third", [homeAttack[3], homeDefense[3]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
+
+    createSlopeChart("awayBuildup", "Away Buildup", [awayAttack[0], awayDefense[0]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
+    createSlopeChart("awayMidfield", "Away Midfield", [awayAttack[1], awayDefense[1]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
+    createSlopeChart("awayWingplay", "Away Wingplay", [awayAttack[2], awayDefense[2]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
+    createSlopeChart("awayLastThird", "Away Last Third", [awayAttack[3], awayDefense[3]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
+
+  </script>
+
+</body>
+</html>
