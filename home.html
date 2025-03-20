@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Home Team Zones Influence</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", sans-serif;
+      background: #2B2B2B; /* Dark grey background */
+      color: #E0E0E0; /* White text */
+      text-align: center;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .chart-container {
+      width: 90vw;
+      max-width: 1000px;
+      margin: 40px auto;
+      background: #ffffff; /* White background for contrast */
+      border-radius: 8px;
+      padding: 20px 20px 30px 20px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Home Team - Zones Influence</h2>
+  <div class="chart-container">
+    <div id="homeAttackChart"></div>
+  </div>
+
+  <div class="chart-container">
+    <div id="homeDefenseChart"></div>
+  </div>
+
+  <script>
+    /*************************************************************
+     * COLORS
+     *************************************************************/
+    const ZONE_COLORS = {
+      "buildup": { attack: "#6A5ACD", defense: "#4682B4" },  // Purple/Blue
+      "midfield": { attack: "#FF8C00", defense: "#BDB76B" },  // Orange/Greenish Yellow
+      "wingplay": { attack: "#FFB6C1", defense: "#00CED1" },  // Pastel Red/Cyan
+      "lastthird": { attack: "#8B0000", defense: "#DC143C" }  // Deep Red/Bright Red
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    function numParam(name, defaultVal = 0) {
+      const val = params.get(name);
+      return val ? Number(val) : defaultVal;
+    }
+
+    function getZoneValues(prefix) {
+      return {
+        buildup: [numParam(`${prefix}_initial_buildup`), numParam(`${prefix}_final_buildup`)],
+        midfield: [numParam(`${prefix}_initial_midfield`), numParam(`${prefix}_final_midfield`)],
+        wingplay: [numParam(`${prefix}_initial_wingplay`), numParam(`${prefix}_final_wingplay`)],
+        lastthird: [numParam(`${prefix}_initial_lastthird`), numParam(`${prefix}_final_lastthird`)]
+      };
+    }
+
+    const homeAttack = getZoneValues("home_attack");
+    const homeDefense = getZoneValues("home_defend");
+
+    function createSlopeChart(elementId, title, zoneData, colors) {
+      new ApexCharts(document.querySelector(`#${elementId}`), {
+        chart: { type: "line", height: 350, background: "#ffffff", toolbar: { show: false } },
+        series: [
+          { name: "Buildup", data: zoneData.buildup, color: colors.buildup },
+          { name: "Midfield", data: zoneData.midfield, color: colors.midfield },
+          { name: "Wingplay", data: zoneData.wingplay, color: colors.wingplay },
+          { name: "Last Third", data: zoneData.lastthird, color: colors.lastthird }
+        ],
+        xaxis: {
+          categories: ["Initial", "Final"],
+          labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
+        },
+        stroke: { width: 4, curve: "smooth" },
+        title: {
+          text: title,
+          align: "center",
+          style: { fontSize: "16px", fontWeight: "700", color: "#000000" }
+        },
+        tooltip: { theme: "light" },
+        legend: { position: "bottom" }
+      }).render();
+    }
+
+    createSlopeChart("homeAttackChart", "📈 Home Attack Influence", homeAttack, {
+      buildup: ZONE_COLORS["buildup"].attack,
+      midfield: ZONE_COLORS["midfield"].attack,
+      wingplay: ZONE_COLORS["wingplay"].attack,
+      lastthird: ZONE_COLORS["lastthird"].attack
+    });
+
+    createSlopeChart("homeDefenseChart", "🛡️ Home Defense Influence", homeDefense, {
+      buildup: ZONE_COLORS["buildup"].defense,
+      midfield: ZONE_COLORS["midfield"].defense,
+      wingplay: ZONE_COLORS["wingplay"].defense,
+      lastthird: ZONE_COLORS["lastthird"].defense
+    });
+  </script>
+
+</body>
+</html>
