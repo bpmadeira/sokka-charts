@@ -30,17 +30,8 @@
     }
     .chart-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    .image-container {
-      margin-top: 20px;
-    }
-    .image-container img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      grid-template-columns: 1fr;
+      gap: 30px;
     }
   </style>
 </head>
@@ -49,38 +40,28 @@
   <h2>Zones Influence - Home Team</h2>
   <div class="chart-container">
     <div class="chart-grid">
-      <div id="homeBuildup"></div>
-      <div id="homeMidfield"></div>
-      <div id="homeWingplay"></div>
-      <div id="homeLastThird"></div>
+      <div id="homeAttackChart"></div>
+      <div id="homeDefenseChart"></div>
     </div>
   </div>
 
   <h2>Zones Influence - Away Team</h2>
   <div class="chart-container">
     <div class="chart-grid">
-      <div id="awayBuildup"></div>
-      <div id="awayMidfield"></div>
-      <div id="awayWingplay"></div>
-      <div id="awayLastThird"></div>
+      <div id="awayAttackChart"></div>
+      <div id="awayDefenseChart"></div>
     </div>
-  </div>
-
-  <!-- Image Section for Reference -->
-  <div class="image-container">
-    <h3>Zone Reference</h3>
-    <img src="YOUR_IMAGE_URL_HERE" alt="Zones Reference">
   </div>
 
   <script>
     /*************************************************************
-     * GLOBAL COLORS (Shared Between Home & Away)
+     * GLOBAL COLORS
      *************************************************************/
     const ZONE_COLORS = {
-      "buildup": ["#6A5ACD", "#4682B4"],  // Purple/Blue
-      "midfield": ["#FFD700", "#FF8C00"],  // Yellow/Orange
-      "lastthird": ["#8B0000", "#DC143C"],  // Deep Red/Red
-      "wingplay": ["#FFB6C1", "#00CED1"]  // Pastel Red/Cyan
+      "buildup": { attack: "#6A5ACD", defense: "#4682B4" },  // Purple/Blue
+      "midfield": { attack: "#FF8C00", defense: "#BDB76B" },  // Orange/Greenish Yellow
+      "wingplay": { attack: "#FFB6C1", defense: "#00CED1" },  // Pastel Red/Cyan
+      "lastthird": { attack: "#8B0000", defense: "#DC143C" }  // Deep Red/Bright Red
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -96,24 +77,31 @@
     const categories = ["Initial", "Final"];
 
     function getZoneValues(prefix) {
-      return [
-        [numParam(`${prefix}_initial_buildup`), numParam(`${prefix}_final_buildup`)],
-        [numParam(`${prefix}_initial_midfield`), numParam(`${prefix}_final_midfield`)],
-        [numParam(`${prefix}_initial_wingplay`), numParam(`${prefix}_final_wingplay`)],
-        [numParam(`${prefix}_initial_lastthird`), numParam(`${prefix}_final_lastthird`)]
-      ];
+      return {
+        buildup: [numParam(`${prefix}_initial_buildup`), numParam(`${prefix}_final_buildup`)],
+        midfield: [numParam(`${prefix}_initial_midfield`), numParam(`${prefix}_final_midfield`)],
+        wingplay: [numParam(`${prefix}_initial_wingplay`), numParam(`${prefix}_final_wingplay`)],
+        lastthird: [numParam(`${prefix}_initial_lastthird`), numParam(`${prefix}_final_lastthird`)]
+      };
     }
 
-    const homeZones = getZoneValues("home_attack");
-    const awayZones = getZoneValues("away_attack");
+    const homeAttack = getZoneValues("home_attack");
+    const homeDefense = getZoneValues("home_defend");
+    const awayAttack = getZoneValues("away_attack");
+    const awayDefense = getZoneValues("away_defend");
 
     /*************************************************************
      * CHART CONFIGURATION FUNCTION (SLOPE CHART)
      *************************************************************/
-    function createSlopeChart(elementId, title, dataSeries, colors) {
+    function createSlopeChart(elementId, title, zoneData, colors) {
       new ApexCharts(document.querySelector(`#${elementId}`), {
-        chart: { type: "line", height: 250, background: "#ffffff", toolbar: { show: false } },
-        series: [{ name: "Influence", data: dataSeries }],
+        chart: { type: "line", height: 350, background: "#ffffff", toolbar: { show: false } },
+        series: [
+          { name: "Buildup", data: zoneData.buildup, color: colors.buildup },
+          { name: "Midfield", data: zoneData.midfield, color: colors.midfield },
+          { name: "Wingplay", data: zoneData.wingplay, color: colors.wingplay },
+          { name: "Last Third", data: zoneData.lastthird, color: colors.lastthird }
+        ],
         xaxis: {
           categories: categories,
           labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
@@ -122,37 +110,55 @@
           labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
         },
         stroke: { width: 4, curve: "smooth" },
-        colors: colors,
         title: {
           text: title,
           align: "center",
-          style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#000000" }
+          style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#000000" }
         },
         tooltip: {
           theme: "light",
           style: { color: "#000000" }
         },
         legend: {
-          show: false
+          position: "bottom",
+          labels: { colors: "#000000" }
         }
       }).render();
     }
 
     /*************************************************************
-     * RENDER HOME ZONES
+     * RENDER HOME ATTACK & DEFENSE CHARTS
      *************************************************************/
-    createSlopeChart("homeBuildup", "Home Buildup", homeZones[0], ZONE_COLORS["buildup"]);
-    createSlopeChart("homeMidfield", "Home Midfield", homeZones[1], ZONE_COLORS["midfield"]);
-    createSlopeChart("homeWingplay", "Home Wingplay", homeZones[2], ZONE_COLORS["wingplay"]);
-    createSlopeChart("homeLastThird", "Home Last Third", homeZones[3], ZONE_COLORS["lastthird"]);
+    createSlopeChart("homeAttackChart", "📈 Home Attack Influence", homeAttack, {
+      buildup: ZONE_COLORS["buildup"].attack,
+      midfield: ZONE_COLORS["midfield"].attack,
+      wingplay: ZONE_COLORS["wingplay"].attack,
+      lastthird: ZONE_COLORS["lastthird"].attack
+    });
+
+    createSlopeChart("homeDefenseChart", "🛡️ Home Defense Influence", homeDefense, {
+      buildup: ZONE_COLORS["buildup"].defense,
+      midfield: ZONE_COLORS["midfield"].defense,
+      wingplay: ZONE_COLORS["wingplay"].defense,
+      lastthird: ZONE_COLORS["lastthird"].defense
+    });
 
     /*************************************************************
-     * RENDER AWAY ZONES
+     * RENDER AWAY ATTACK & DEFENSE CHARTS
      *************************************************************/
-    createSlopeChart("awayBuildup", "Away Buildup", awayZones[0], ZONE_COLORS["buildup"]);
-    createSlopeChart("awayMidfield", "Away Midfield", awayZones[1], ZONE_COLORS["midfield"]);
-    createSlopeChart("awayWingplay", "Away Wingplay", awayZones[2], ZONE_COLORS["wingplay"]);
-    createSlopeChart("awayLastThird", "Away Last Third", awayZones[3], ZONE_COLORS["lastthird"]);
+    createSlopeChart("awayAttackChart", "📈 Away Attack Influence", awayAttack, {
+      buildup: ZONE_COLORS["buildup"].attack,
+      midfield: ZONE_COLORS["midfield"].attack,
+      wingplay: ZONE_COLORS["wingplay"].attack,
+      lastthird: ZONE_COLORS["lastthird"].attack
+    });
+
+    createSlopeChart("awayDefenseChart", "🛡️ Away Defense Influence", awayDefense, {
+      buildup: ZONE_COLORS["buildup"].defense,
+      midfield: ZONE_COLORS["midfield"].defense,
+      wingplay: ZONE_COLORS["wingplay"].defense,
+      lastthird: ZONE_COLORS["lastthird"].defense
+    });
 
   </script>
 
