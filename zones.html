@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Zones Influence - Slope Charts</title>
+  <title>Zones Influence - Home vs Away</title>
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
       padding: 0;
       font-family: "Inter", sans-serif;
       background: #212121; /* Dark background */
-      color: #E0E0E0; /* White text for readability */
+      color: #E0E0E0; /* White text */
       text-align: center;
       height: 100vh;
       overflow-y: auto; /* Allow scrolling */
@@ -32,6 +32,15 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
+    }
+    .image-container {
+      margin-top: 20px;
+    }
+    .image-container img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
@@ -57,14 +66,22 @@
     </div>
   </div>
 
+  <!-- Image Section for Reference -->
+  <div class="image-container">
+    <h3>Zone Reference</h3>
+    <img src="YOUR_IMAGE_URL_HERE" alt="Zones Reference">
+  </div>
+
   <script>
     /*************************************************************
-     * GLOBAL COLORS
+     * GLOBAL COLORS (Shared Between Home & Away)
      *************************************************************/
-    const HOME_ATTACK_COLOR = "#fa3048";  // Bright Red for Home Attack
-    const HOME_DEFEND_COLOR = "#b22222";  // Darker Red for Home Defense
-    const AWAY_ATTACK_COLOR = "#505050";  // Dark Gray for Away Attack
-    const AWAY_DEFEND_COLOR = "#808080";  // Lighter Gray for Away Defense
+    const ZONE_COLORS = {
+      "buildup": ["#6A5ACD", "#4682B4"],  // Purple/Blue
+      "midfield": ["#FFD700", "#FF8C00"],  // Yellow/Orange
+      "lastthird": ["#8B0000", "#DC143C"],  // Deep Red/Red
+      "wingplay": ["#FFB6C1", "#00CED1"]  // Pastel Red/Cyan
+    };
 
     const params = new URLSearchParams(window.location.search);
 
@@ -76,7 +93,6 @@
     /*************************************************************
      * PARSE ZONE VALUES
      *************************************************************/
-    const zones = ["Buildup", "Midfield", "Wingplay", "Last Third"];
     const categories = ["Initial", "Final"];
 
     function getZoneValues(prefix) {
@@ -88,10 +104,8 @@
       ];
     }
 
-    const homeAttack = getZoneValues("home_attack");
-    const homeDefense = getZoneValues("home_defend");
-    const awayAttack = getZoneValues("away_attack");
-    const awayDefense = getZoneValues("away_defend");
+    const homeZones = getZoneValues("home_attack");
+    const awayZones = getZoneValues("away_attack");
 
     /*************************************************************
      * CHART CONFIGURATION FUNCTION (SLOPE CHART)
@@ -99,10 +113,7 @@
     function createSlopeChart(elementId, title, dataSeries, colors) {
       new ApexCharts(document.querySelector(`#${elementId}`), {
         chart: { type: "line", height: 250, background: "#ffffff", toolbar: { show: false } },
-        series: [
-          { name: "Attack", data: dataSeries[0] },
-          { name: "Defense", data: dataSeries[1] }
-        ],
+        series: [{ name: "Influence", data: dataSeries }],
         xaxis: {
           categories: categories,
           labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
@@ -110,7 +121,7 @@
         yaxis: {
           labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
         },
-        stroke: { width: 4, curve: "smooth" }, // Thicker stroke for visibility
+        stroke: { width: 4, curve: "smooth" },
         colors: colors,
         title: {
           text: title,
@@ -118,28 +129,30 @@
           style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#000000" }
         },
         tooltip: {
-          theme: "light", // Makes tooltip background white
-          style: { color: "#000000" } // Ensures black text in tooltip
+          theme: "light",
+          style: { color: "#000000" }
         },
         legend: {
-          position: "top",
-          labels: { colors: "#000000" } // Black text for legend
+          show: false
         }
       }).render();
     }
 
     /*************************************************************
-     * RENDER SLOPE CHARTS
+     * RENDER HOME ZONES
      *************************************************************/
-    createSlopeChart("homeBuildup", "Home Buildup", [homeAttack[0], homeDefense[0]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
-    createSlopeChart("homeMidfield", "Home Midfield", [homeAttack[1], homeDefense[1]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
-    createSlopeChart("homeWingplay", "Home Wingplay", [homeAttack[2], homeDefense[2]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
-    createSlopeChart("homeLastThird", "Home Last Third", [homeAttack[3], homeDefense[3]], [HOME_ATTACK_COLOR, HOME_DEFEND_COLOR]);
+    createSlopeChart("homeBuildup", "Home Buildup", homeZones[0], ZONE_COLORS["buildup"]);
+    createSlopeChart("homeMidfield", "Home Midfield", homeZones[1], ZONE_COLORS["midfield"]);
+    createSlopeChart("homeWingplay", "Home Wingplay", homeZones[2], ZONE_COLORS["wingplay"]);
+    createSlopeChart("homeLastThird", "Home Last Third", homeZones[3], ZONE_COLORS["lastthird"]);
 
-    createSlopeChart("awayBuildup", "Away Buildup", [awayAttack[0], awayDefense[0]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
-    createSlopeChart("awayMidfield", "Away Midfield", [awayAttack[1], awayDefense[1]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
-    createSlopeChart("awayWingplay", "Away Wingplay", [awayAttack[2], awayDefense[2]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
-    createSlopeChart("awayLastThird", "Away Last Third", [awayAttack[3], awayDefense[3]], [AWAY_ATTACK_COLOR, AWAY_DEFEND_COLOR]);
+    /*************************************************************
+     * RENDER AWAY ZONES
+     *************************************************************/
+    createSlopeChart("awayBuildup", "Away Buildup", awayZones[0], ZONE_COLORS["buildup"]);
+    createSlopeChart("awayMidfield", "Away Midfield", awayZones[1], ZONE_COLORS["midfield"]);
+    createSlopeChart("awayWingplay", "Away Wingplay", awayZones[2], ZONE_COLORS["wingplay"]);
+    createSlopeChart("awayLastThird", "Away Last Third", awayZones[3], ZONE_COLORS["lastthird"]);
 
   </script>
 
