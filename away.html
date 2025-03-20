@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Away Team Zones Influence</title>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: "Inter", sans-serif;
+      background: #2B2B2B; /* Dark grey background */
+      color: #E0E0E0; /* White text */
+      text-align: center;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .chart-container {
+      width: 90vw;
+      max-width: 1000px;
+      margin: 40px auto;
+      background: #ffffff; /* White background for contrast */
+      border-radius: 8px;
+      padding: 20px 20px 30px 20px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Away Team - Zones Influence</h2>
+  <div class="chart-container">
+    <div id="awayAttackChart"></div>
+  </div>
+
+  <div class="chart-container">
+    <div id="awayDefenseChart"></div>
+  </div>
+
+  <script>
+    const awayAttack = getZoneValues("away_attack");
+    const awayDefense = getZoneValues("away_defend");
+
+    createSlopeChart("awayAttackChart", "📈 Away Attack Influence", awayAttack, {
+      buildup: ZONE_COLORS["buildup"].attack,
+      midfield: ZONE_COLORS["midfield"].attack,
+      wingplay: ZONE_COLORS["wingplay"].attack,
+      lastthird: ZONE_COLORS["lastthird"].attack
+    });
+
+    createSlopeChart("awayDefenseChart", "🛡️ Away Defense Influence", awayDefense, {
+      buildup: ZONE_COLORS["buildup"].defense,
+      midfield: ZONE_COLORS["midfield"].defense,
+      wingplay: ZONE_COLORS["wingplay"].defense,
+      lastthird: ZONE_COLORS["lastthird"].defense
+    });
+  </script>
+
+</body>
+</html>
