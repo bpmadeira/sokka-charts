@@ -40,8 +40,57 @@
   </div>
 
   <script>
+    /*************************************************************
+     * COLORS
+     *************************************************************/
+    const ZONE_COLORS = {
+      "buildup": { attack: "#6A5ACD", defense: "#4682B4" },  // Purple/Blue
+      "midfield": { attack: "#FF8C00", defense: "#BDB76B" },  // Orange/Greenish Yellow
+      "wingplay": { attack: "#FFB6C1", defense: "#00CED1" },  // Pastel Red/Cyan
+      "lastthird": { attack: "#8B0000", defense: "#DC143C" }  // Deep Red/Bright Red
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    function numParam(name, defaultVal = 0) {
+      const val = params.get(name);
+      return val ? Number(val) : defaultVal;
+    }
+
+    function getZoneValues(prefix) {
+      return {
+        buildup: [numParam(`${prefix}_initial_buildup`), numParam(`${prefix}_final_buildup`)],
+        midfield: [numParam(`${prefix}_initial_midfield`), numParam(`${prefix}_final_midfield`)],
+        wingplay: [numParam(`${prefix}_initial_wingplay`), numParam(`${prefix}_final_wingplay`)],
+        lastthird: [numParam(`${prefix}_initial_lastthird`), numParam(`${prefix}_final_lastthird`)]
+      };
+    }
+
     const awayAttack = getZoneValues("away_attack");
     const awayDefense = getZoneValues("away_defend");
+
+    function createSlopeChart(elementId, title, zoneData, colors) {
+      new ApexCharts(document.querySelector(`#${elementId}`), {
+        chart: { type: "line", height: 350, background: "#ffffff", toolbar: { show: false } },
+        series: [
+          { name: "Buildup", data: zoneData.buildup, color: colors.buildup },
+          { name: "Midfield", data: zoneData.midfield, color: colors.midfield },
+          { name: "Wingplay", data: zoneData.wingplay, color: colors.wingplay },
+          { name: "Last Third", data: zoneData.lastthird, color: colors.lastthird }
+        ],
+        xaxis: {
+          categories: ["Initial", "Final"],
+          labels: { style: { color: "#000000", fontSize: "12px", fontWeight: "700" } }
+        },
+        stroke: { width: 4, curve: "smooth" },
+        title: {
+          text: title,
+          align: "center",
+          style: { fontSize: "16px", fontWeight: "700", color: "#000000" }
+        },
+        tooltip: { theme: "light" },
+        legend: { position: "bottom" }
+      }).render();
+    }
 
     createSlopeChart("awayAttackChart", "📈 Away Attack Influence", awayAttack, {
       buildup: ZONE_COLORS["buildup"].attack,
