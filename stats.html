@@ -72,7 +72,9 @@
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
 
+    // Reverse the direction - home is negative (left), away is positive (right)
     const homeStatsNeg = homeStats.map(v => v === 0 ? 0 : -Math.abs(v));
+    const awayStatsPos = awayStats.map(v => Math.abs(v));
     const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
 
     new ApexCharts(document.querySelector("#statsChart"), {
@@ -83,7 +85,7 @@
       },
       series: [
         { name: "Home", data: homeStatsNeg },
-        { name: "Away", data: awayStats }
+        { name: "Away", data: awayStatsPos }
       ],
       xaxis: {
         categories: statLabels,
