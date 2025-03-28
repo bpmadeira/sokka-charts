@@ -13,17 +13,17 @@
       margin: 0;
       padding: 0;
       font-family: "Inter", sans-serif;
-      background: #1c2326; /* Dark theme */
-      color: #E0E0E0; /* White text for readability */
+      background: #1c2326;
+      color: #E0E0E0;
       text-align: center;
       height: 100vh;
-      overflow: hidden; /* Prevent scrolling */
+      overflow: hidden;
     }
     .chart-container {
       width: 90vw;
       max-width: 900px;
       margin: 50px auto;
-      background: #1c2326; /* Dark gray container */
+      background: #1c2326;
       border-radius: 8px;
       padding: 20px 20px 30px 20px;
       box-shadow: 0 1px 4px rgba(255, 255, 255, 0.1);
@@ -32,7 +32,6 @@
 </head>
 <body>
 
-  <!-- Match Stats Chart -->
   <div class="chart-container">
     <div id="statsChart"></div>
   </div>
@@ -72,25 +71,25 @@
       "Saves", "Corners", "Fouls", "Yellows", "Reds"
     ];
 
-    // Reverse the direction - home is negative (left), away is positive (right)
-    const homeStatsNeg = homeStats.map(v => v === 0 ? 0 : -Math.abs(v));
-    const awayStatsPos = awayStats.map(v => Math.abs(v));
-    const maxVal = Math.max(...homeStats.map(Math.abs), ...awayStats.map(Math.abs));
+    // Calculate new arrays: Home values are positive, away values are negative.
+    const homeStatsPos = homeStats.map(v => Math.abs(v));
+    const awayStatsNeg = awayStats.map(v => v === 0 ? 0 : -Math.abs(v));
+    const maxVal = Math.max(...homeStatsPos, ...awayStats.map(v => Math.abs(v)));
 
     new ApexCharts(document.querySelector("#statsChart"), {
       chart: { 
         type: "bar", 
         height: 400, 
-        background: "#1c2326"  /* Dark background */
+        background: "#1c2326"
       },
       series: [
-        { name: "Home", data: homeStatsNeg },
-        { name: "Away", data: awayStatsPos }
+        { name: "Away", data: awayStatsNeg },
+        { name: "Home", data: homeStatsPos }
       ],
       xaxis: {
         categories: statLabels,
         labels: { 
-          show: false  /* Hide X-axis numbers */
+          show: false
         },
         min: -maxVal,
         max: maxVal
@@ -98,7 +97,7 @@
       yaxis: { 
         reversed: true,
         labels: { 
-          style: { color: "#FFFFFF", fontSize: "14px", fontWeight: "700" } /* White labels */
+          style: { color: "#FFFFFF", fontSize: "14px", fontWeight: "700" }
         }
       },
       plotOptions: {
@@ -111,17 +110,18 @@
       dataLabels: {
         enabled: true,
         formatter: (val) => Math.abs(val),
-        style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" } /* White text */
+        style: { fontSize: "14px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
       },
-      colors: [HOME_COLOR, AWAY_COLOR], /* Red for home, Gray for away */
+      // Note: We swap the colors to match series order:
+      colors: [AWAY_COLOR, HOME_COLOR],
       title: {
         text: "Match Stats",
         align: "center",
-        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" } /* White text */
+        style: { fontSize: "16px", fontFamily: "Inter", fontWeight: "700", color: "#FFFFFF" }
       },
       legend: { 
         position: "top", 
-        labels: { colors: "#FFFFFF" } /* White text for legend */
+        labels: { colors: "#FFFFFF" }
       }
     }).render();
   </script>
